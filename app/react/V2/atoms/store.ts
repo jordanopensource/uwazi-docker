@@ -70,7 +70,7 @@ if (isClient && window.__atomStoreData__) {
   });
   atomStore.sub(translationsAtom, () => {
     const value = atomStore.get(translationsAtom);
-    store?.dispatch({ type: 'translations', value });
+    store?.dispatch({ type: 'translations/SET', value });
   });
 }
 
