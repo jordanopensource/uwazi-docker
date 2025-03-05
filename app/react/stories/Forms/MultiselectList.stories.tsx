@@ -73,8 +73,8 @@ const Basic: Story = {
         value: 'lItem1',
       },
       {
-        searchLabel: 'Item with extra extra extra long name 2',
-        label: 'Item with extra extra extra long name 2',
+        searchLabel: 'Item with ëxtra extra extra long name 2',
+        label: 'Item with extra ëxtra extra long name 2',
         value: 'lItem2',
       },
 
