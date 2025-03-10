@@ -2,19 +2,24 @@ import { IncomingHttpHeaders } from 'http';
 import api from 'app/utils/api';
 import { RequestParams } from 'app/utils/RequestParams';
 
-interface LookupEntity {
+interface LookupOption {
   value: string;
   label: string;
   template: string;
 }
 
+interface LookupResponse {
+  count: number;
+  options: LookupOption[];
+}
+
 const lookup = async (
-  searchterm: string,
+  searchTerm: string,
   templates?: string[],
   headers?: IncomingHttpHeaders
-): Promise<LookupEntity[]> => {
+): Promise<LookupResponse> => {
   try {
-    const requestParams = new RequestParams({ searchterm, templates }, headers);
+    const requestParams = new RequestParams({ searchTerm, templates }, headers);
     if (headers && headers['Content-Language']) {
       api.locale(headers['Content-Language']);
     }
