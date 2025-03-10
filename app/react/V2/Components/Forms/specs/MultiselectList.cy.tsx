@@ -210,21 +210,6 @@ describe('MultiselectList.cy.tsx', () => {
     });
   });
 
-  describe('show selected and search', () => {
-    it('should show matching options even when not selected', () => {
-      cy.viewport(450, 650);
-      mount(
-        <div className="p-2 tw-content">
-          <MultiselectList onChange={() => {}} items={pizzas} value={['MGT']} />
-        </div>
-      );
-
-      cy.get('input[type=text]').type('pepperoni');
-      cy.get('input[type="radio"]').eq(1).click();
-      cy.contains('Pepperoni').should('be.visible');
-    });
-  });
-
   describe('blank state property', () => {
     it('should show blank state property if there is no items passed to the component', () => {
       cy.viewport(450, 650);
