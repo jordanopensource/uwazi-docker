@@ -212,6 +212,14 @@ const PDFSidepanel = ({
   const watchField = watch('field');
 
   useEffect(() => {
+    if (
+      property?.type !== 'select' &&
+      property?.type !== 'multiselect' &&
+      property?.type !== 'relationship'
+    ) {
+      return;
+    }
+
     const currentValues = (getValues('field') as string[]) || [];
     const suggestions = (suggestion?.suggestedValue as string[]) || [];
 
@@ -238,7 +246,6 @@ const PDFSidepanel = ({
     };
 
     const _options: MultiselectListOption[] = [];
-
     thesaurus?.values.forEach((value: any) => {
       _options.push({
         label: renderLabel(value),
