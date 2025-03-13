@@ -50,18 +50,16 @@ export class LibraryModeToggleButtons extends Component {
             <Icon icon="th" />
             <span className="tab-link-tooltip">{t('System', 'Cards view')}</span>
           </I18NLink>
-          {isClient && (
-            <I18NLink
-              to={`library/table${searchUrl}`}
-              className="btn btn-default"
-              activeclassname="is-active"
-              aria-label={t('System', 'library table view', null, false)}
-            >
-              <Icon icon="align-justify" />
-              <span className="tab-link-tooltip">{t('System', 'Table view')}</span>
-            </I18NLink>
-          )}
-          {showGeolocation && isClient && (
+          <I18NLink
+            to={`library/table${searchUrl}`}
+            className="btn btn-default"
+            activeclassname="is-active"
+            aria-label={t('System', 'library table view', null, false)}
+          >
+            <Icon icon="align-justify" />
+            <span className="tab-link-tooltip">{t('System', 'Table view')}</span>
+          </I18NLink>
+          {showGeolocation && (
             <I18NLink
               to={`library/map${searchUrl}`}
               className="btn btn-default"
