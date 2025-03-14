@@ -7,6 +7,12 @@ import {
   PXEntityQuery,
 } from 'app/V2/Routes/Settings/ParagraphExtraction/types';
 
+// app.post(
+//   '/api/paragraphExtraction/extract',
+//   needsAuthorization(),
+//   PXExtractParagraphFromEntitiesController.adapt(PXExtractParagraphFromEntitiesController)
+// );
+
 const dummyData = [
   {
     _id: '1',
