@@ -11,10 +11,10 @@ interface AddExtractorContextType {
   setTargetTemplateId: (id: string) => void;
   sourceTemplateId: string;
   setSourceTemplateId: (id: string) => void;
-  richTextId: string;
-  setRichTextId: (id: string) => void;
-  numericId: string;
-  setNumericId: (id: string) => void;
+  paragraphPropertyId: string;
+  setParagraphPropertyId: (id: string) => void;
+  paragraphNumberPropertyId: string;
+  setParagraphNumberPropertyId: (id: string) => void;
   relationshipId: string;
   setRelationshipId: (id: string) => void;
   targetTemplateOptions: MultiselectListOption[];
@@ -34,8 +34,8 @@ export const AddExtractorProvider: React.FC<{
 
   const [targetTemplateId, setTargetTemplateId] = useState<string>('');
   const [sourceTemplateId, setSourceTemplateId] = useState<string>('');
-  const [richTextId, setRichTextId] = useState<string>('');
-  const [numericId, setNumericId] = useState<string>('');
+  const [paragraphPropertyId, setParagraphPropertyId] = useState<string>('');
+  const [paragraphNumberPropertyId, setParagraphNumberPropertyId] = useState<string>('');
   const [relationshipId, setRelationshipId] = useState<string>('');
 
   const targetTemplateOptions = formatTemplatesToOptions(
@@ -48,10 +48,10 @@ export const AddExtractorProvider: React.FC<{
       setTargetTemplateId,
       sourceTemplateId,
       setSourceTemplateId,
-      richTextId,
-      setRichTextId,
-      numericId,
-      setNumericId,
+      paragraphPropertyId,
+      setParagraphPropertyId,
+      paragraphNumberPropertyId,
+      setParagraphNumberPropertyId,
       relationshipId,
       setRelationshipId,
       targetTemplateOptions,
@@ -62,8 +62,8 @@ export const AddExtractorProvider: React.FC<{
     [
       targetTemplateId,
       sourceTemplateId,
-      richTextId,
-      numericId,
+      paragraphPropertyId,
+      paragraphNumberPropertyId,
       relationshipId,
       targetTemplateOptions,
       step,

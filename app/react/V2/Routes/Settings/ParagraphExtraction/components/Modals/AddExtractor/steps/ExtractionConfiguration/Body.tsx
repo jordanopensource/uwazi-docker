@@ -32,11 +32,11 @@ const getTemplateProperties = (
 const Body = () => {
   const {
     targetTemplateId,
-    richTextId,
-    numericId,
+    paragraphPropertyId,
+    paragraphNumberPropertyId,
     relationshipId,
-    setRichTextId,
-    setNumericId,
+    setParagraphPropertyId,
+    setParagraphNumberPropertyId,
     setRelationshipId,
   } = useAddExtractorContext();
   const templates = useAtomValue(templatesAtom);
@@ -71,10 +71,10 @@ const Body = () => {
               Paragraph text extraction property (rich text):
             </Translate>
           }
-          value={richTextId}
+          value={paragraphPropertyId}
           options={getOptions(richTextProperties)}
           onChange={evt => {
-            setRichTextId(evt.target.value);
+            setParagraphPropertyId(evt.target.value);
           }}
         />
       </div>
@@ -86,10 +86,10 @@ const Body = () => {
               Paragraph text extraction property (numeric text):
             </Translate>
           }
-          value={numericId}
+          value={paragraphNumberPropertyId}
           options={getOptions(numericProperties)}
           onChange={evt => {
-            setNumericId(evt.target.value);
+            setParagraphNumberPropertyId(evt.target.value);
           }}
         />
       </div>

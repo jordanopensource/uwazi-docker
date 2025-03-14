@@ -31,11 +31,8 @@ const buildEntityQuery = (searchParams: URLSearchParams, extractorId: string) =>
 const PXEntityLoader =
   (headers?: IncomingHttpHeaders): LoaderFunction =>
   async ({ params: { extractorId = '' }, request }) => {
-    console.log('PXEntityLoader');
     const searchParams = new URLSearchParams(request.url.split('?')[1]);
-
     const query = buildEntityQuery(searchParams, extractorId);
-
     const [entities, languages, filters] = await Promise.all([
       pxEntitiesApi.get(query, headers),
       I18NApi.getLanguages(new RequestParams({}, headers)),

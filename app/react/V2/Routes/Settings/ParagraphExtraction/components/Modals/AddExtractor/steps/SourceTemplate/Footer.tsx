@@ -15,8 +15,8 @@ const Footer = () => {
     setStep,
     targetTemplateId,
     setShowModal,
-    richTextId,
-    numericId,
+    paragraphPropertyId,
+    paragraphNumberPropertyId,
     relationshipId,
   } = useAddExtractorContext();
 
@@ -25,8 +25,8 @@ const Footer = () => {
       const values = {
         sourceTemplateId,
         targetTemplateId,
-        richTextId,
-        numericId,
+        paragraphPropertyId,
+        paragraphNumberPropertyId,
         relationshipId,
       };
       await extractorsAPI.save(values);

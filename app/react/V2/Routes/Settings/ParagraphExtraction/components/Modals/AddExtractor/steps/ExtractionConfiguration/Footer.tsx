@@ -5,9 +5,9 @@ import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { useAddExtractorContext } from '../../AddExtractorContext';
 
 const Footer = () => {
-  const { setStep, richTextId, numericId, relationshipId } = useAddExtractorContext();
-  const isDisabled = !richTextId || !numericId || !relationshipId;
-  console.log({ richTextId, numericId, relationshipId });
+  const { setStep, paragraphPropertyId, paragraphNumberPropertyId, relationshipId } =
+    useAddExtractorContext();
+  const isDisabled = !paragraphPropertyId || !paragraphNumberPropertyId || !relationshipId;
   return (
     <>
       <Button styling="light" onClick={() => setStep(1)} className="grow">

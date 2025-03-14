@@ -6,6 +6,7 @@ import {
   ParagraphExtractorApiResponse,
   ParagraphExtractorApiPayload,
 } from 'app/V2/Routes/Settings/ParagraphExtraction/types';
+import api from 'app/utils/api';
 
 let dummyData = [
   {
@@ -50,27 +51,25 @@ const get = async (headers?: IncomingHttpHeaders) =>
     });
   });
 
+// app.post(
+//   '/api/paragraphExtraction/extract',
+//   needsAuthorization(),
+//   PXExtractParagraphFromEntitiesController.adapt(PXExtractParagraphFromEntitiesController)
+// );
+
+// app.get(
+//   '/api/paragraphExtraction/extractors',
+//   needsAuthorization(),
+//   PXGetExtractorsController.adapt(PXGetExtractorsController)
+// );
+
 const save = async (
   extractorValues: ParagraphExtractorApiPayload
 ): Promise<ParagraphExtractorApiResponse> => {
   const requestParams = new RequestParams(extractorValues);
-  // const response = await api.delete(apiEndpoint, requestParams);
-
-  const dummyEntry = {
-    ...extractorValues,
-    documents: Math.floor(Math.random() * 1000),
-    count: {
-      generatedEntities: Math.floor(Math.random() * 100),
-      new: Math.floor(Math.random() * 10),
-    },
-    _id: Math.floor(Math.random() * 100).toString(),
-  };
-
-  dummyData.push(dummyEntry);
-  console.log(dummyData);
-
+  const response = await api.post('paragraphExtraction/extractor', { requestParams });
   return new Promise(resolve => {
-    resolve(dummyEntry);
+    resolve(response);
   });
 };
 
