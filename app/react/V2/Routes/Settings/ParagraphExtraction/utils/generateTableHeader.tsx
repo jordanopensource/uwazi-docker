@@ -1,9 +1,9 @@
 import React from 'react';
 import { Translate } from 'app/I18N';
-import { TableHeaderContainer } from '../components/TableHeaderContainer';
+import { TableHeader } from '../components/TableHeader';
 
-// in case there will be aesthetic changes to the table header, we can change
-// the component here but its probably an overkill now
+// in case there will be aesthetic changes to the table header,
+//  we can change the component here but its probably an overkill now
 const generateTableHeader =
   (
     translationKey: string,
@@ -12,9 +12,9 @@ const generateTableHeader =
     }
   ) =>
   () => (
-    <TableHeaderContainer className={options?.className}>
+    <TableHeader className={options?.className}>
       {translationKey && <Translate>{translationKey}</Translate>}
-    </TableHeaderContainer>
+    </TableHeader>
   );
 
 export { generateTableHeader };

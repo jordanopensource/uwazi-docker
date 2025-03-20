@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Translate } from 'app/I18N';
 import { Button, ConfirmationModal } from 'app/V2/Components/UI';
-import { useRevalidator } from 'react-router';
+import { useRevalidator, useParams } from 'react-router';
 import { notificationAtom } from 'app/V2/atoms';
 import { useSetAtom } from 'jotai';
 import { dialogConfig } from './config';
@@ -30,14 +30,14 @@ const ExtractEntitiesDialog = ({
 }) => {
   const revalidator = useRevalidator();
   const setNotifications = useSetAtom(notificationAtom);
-
+  const { extractorId } = useParams();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDelete = async () => {
     setIsProcessing(true);
 
     try {
-      await service(selected);
+      await service(extractorId, selected);
       await revalidator.revalidate();
       setIsOpen(false);
       setNotifications({

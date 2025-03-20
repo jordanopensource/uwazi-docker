@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TableHeaderContainer = ({
+const TableHeader = ({
   children,
   className = 'text-gray-500 font-semibold text-xs',
 }: {
@@ -8,4 +8,4 @@ const TableHeaderContainer = ({
   className?: string;
 }) => <span className={`${className}`}>{children}</span>;
 
-export { TableHeaderContainer };
+export { TableHeader };

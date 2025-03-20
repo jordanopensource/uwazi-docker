@@ -1,18 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { IncomingHttpHeaders } from 'http';
-// import api from 'app/utils/api';
+import api from 'app/utils/api';
 import { RequestParams } from 'app/utils/RequestParams';
 import {
   PXEntityApiResponse,
   PXEntityQuery,
   PXEntityTable,
 } from 'app/V2/Routes/Settings/ParagraphExtraction/types';
-
-// app.post(
-//   '/api/paragraphExtraction/extract',
-//   needsAuthorization(),
-//   PXExtractParagraphFromEntitiesController.adapt(PXExtractParagraphFromEntitiesController)
-// );
 
 const dummyData = [
   {
@@ -117,12 +111,19 @@ const extractParagraphs = async (entityIds: PXEntityTable[], headers?: IncomingH
   return Promise.resolve(modeledPayload);
 };
 
-const remove = async (entityIds: PXEntityTable[], headers?: IncomingHttpHeaders) => {
+const extractNewParagraphs = async (
+  extractorId: string,
+  entityIds: PXEntityTable[],
+  headers?: IncomingHttpHeaders
+) => {
   const modeledPayload = {
-    entityIds,
+    extractorId,
+    // TODO: check if this is correct
+    entitySharedIds: entityIds.map(entity => entity._id),
   };
-  // TODO: implement this once backend is ready
-  return Promise.resolve(modeledPayload);
+  const requestParams = new RequestParams(modeledPayload, headers);
+  const response = await api.post('paragraphExtraction/extract', requestParams);
+  return response;
 };
 
-export { get, getFilters, extractParagraphs, remove };
+export { get, getFilters, extractParagraphs, extractNewParagraphs };

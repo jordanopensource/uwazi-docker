@@ -4,7 +4,7 @@ const dialogConfig = {
   headerText: 'Are you sure?',
   cancelButtonText: 'No, Cancel',
   acceptButtonText: 'Continue',
-  service: entitiesAPI.extractParagraphs,
+  service: entitiesAPI.extractNewParagraphs,
   warningText:
     'All of the previously created paragraphs will be deleted and recreated after the process.',
   successText: 'Paragraphs extracted',
