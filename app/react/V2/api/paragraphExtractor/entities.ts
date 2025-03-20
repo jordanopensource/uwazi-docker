@@ -5,6 +5,7 @@ import { RequestParams } from 'app/utils/RequestParams';
 import {
   PXEntityApiResponse,
   PXEntityQuery,
+  PXEntityTable,
 } from 'app/V2/Routes/Settings/ParagraphExtraction/types';
 
 // app.post(
@@ -108,4 +109,20 @@ const getFilters = async (headers?: IncomingHttpHeaders) => {
   }
 };
 
-export { get, getFilters };
+const extractParagraphs = async (entityIds: PXEntityTable[], headers?: IncomingHttpHeaders) => {
+  const modeledPayload = {
+    entityIds,
+  };
+  // TODO: implement this once backend is ready
+  return Promise.resolve(modeledPayload);
+};
+
+const remove = async (entityIds: PXEntityTable[], headers?: IncomingHttpHeaders) => {
+  const modeledPayload = {
+    entityIds,
+  };
+  // TODO: implement this once backend is ready
+  return Promise.resolve(modeledPayload);
+};
+
+export { get, getFilters, extractParagraphs, remove };
