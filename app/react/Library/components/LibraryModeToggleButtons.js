@@ -19,7 +19,7 @@ const LibraryModeToggleButtons = ({
   const renderTableButton = () => {
     if (!isClient) {
       return (
-        <a href="#">
+        <a href="#" className="btn btn-default">
           <Icon icon="align-justify" />
           <span className="tab-link-tooltip">{t('System', 'Table view')}</span>
         </a>
@@ -35,6 +35,32 @@ const LibraryModeToggleButtons = ({
       >
         <Icon icon="align-justify" />
         <span className="tab-link-tooltip">{t('System', 'Table view')}</span>
+      </I18NLink>
+    );
+  };
+
+  const renderMapButton = () => {
+    if (!showGeolocation) {
+      return null;
+    }
+    if (!isClient) {
+      return (
+        <a href="#" className="btn btn-default">
+          <Icon icon="map-marker" />
+          <span className="tab-link-tooltip">{t('System', 'Map view')}</span>
+        </a>
+      );
+    }
+
+    return (
+      <I18NLink
+        to={`library/map${searchUrl}`}
+        className="btn btn-default"
+        activeclassname="is-active"
+        aria-label={t('System', 'library map view', null, false)}
+      >
+        <Icon icon="map-marker" />
+        <span className="tab-link-tooltip">{t('System', 'Map view')}</span>
       </I18NLink>
     );
   };
@@ -79,17 +105,7 @@ const LibraryModeToggleButtons = ({
           <span className="tab-link-tooltip">{t('System', 'Cards view')}</span>
         </I18NLink>
         {renderTableButton()}
-        {showGeolocation && isClient && (
-          <I18NLink
-            to={`library/map${searchUrl}`}
-            className="btn btn-default"
-            activeclassname="is-active"
-            aria-label={t('System', 'library map view', null, false)}
-          >
-            <Icon icon="map-marker" />
-            <span className="tab-link-tooltip">{t('System', 'Map view')}</span>
-          </I18NLink>
-        )}
+        {renderMapButton()}
       </div>
     </div>
   );

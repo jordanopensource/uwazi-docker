@@ -58,6 +58,7 @@ LibraryLayoutBase.defaultProps = {
   sidePanelMode: '',
   scrollCallback: () => {},
   scrollCount: 0,
+  noindex: false,
 };
 
 LibraryLayoutBase.propTypes = {
@@ -67,7 +68,7 @@ LibraryLayoutBase.propTypes = {
   sidePanelMode: PropTypes.string,
   scrollCallback: PropTypes.instanceOf(Function),
   scrollCount: PropTypes.number,
-  noindex: PropTypes.bool.isRequired,
+  noindex: PropTypes.bool,
 };
 
 export { LibraryLayoutBase };
