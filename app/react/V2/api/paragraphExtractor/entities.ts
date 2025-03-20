@@ -6,6 +6,7 @@ import {
   PXEntityApiResponse,
   PXEntityQuery,
   PXEntityTable,
+  PXTable,
 } from 'app/V2/Routes/Settings/ParagraphExtraction/types';
 
 const dummyData = [
@@ -126,4 +127,16 @@ const extractNewParagraphs = async (
   return response;
 };
 
-export { get, getFilters, extractParagraphs, extractNewParagraphs };
+const remove = async (ids: PXTable[]) => {
+  //model values to be sent to backend, adjust this to satisfy backend requirements
+  const modeledPayload = {
+    ids: ids.map(id => id._id),
+  };
+
+  const requestParams = new RequestParams(modeledPayload);
+  return Promise.resolve();
+  // uncomment this once backend is ready
+  // return api.delete(ENDPOINTS.DELETE_EXTRACTOR, requestParams);
+};
+
+export { get, getFilters, extractParagraphs, extractNewParagraphs, remove };

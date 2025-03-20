@@ -30,7 +30,7 @@ const ExtractEntitiesDialog = ({
 }) => {
   const revalidator = useRevalidator();
   const setNotifications = useSetAtom(notificationAtom);
-  const { extractorId } = useParams();
+  const { extractorId = '' } = useParams();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleDelete = async () => {
