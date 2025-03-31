@@ -41,7 +41,7 @@ const ParagraphExtractorDashboard = () => {
 
         <SettingsContent.Footer className="flex gap-2" highlighted={selected?.length > 0}>
           {selected?.length ? (
-            <div className="flex gap-2 items-center ">
+            <div className="flex items-center gap-2 ">
               <DeleteDialog
                 setIsProcessing={setIsSaving}
                 onSuccess={() => {
@@ -51,9 +51,9 @@ const ParagraphExtractorDashboard = () => {
               />
               <div className="text-gray-500">
                 <Translate>Selected</Translate>{' '}
-                <span className="text-gray-900 font-semibold">{selected.length}</span>{' '}
+                <span className="font-semibold text-gray-900">{selected.length}</span>{' '}
                 <Translate>of</Translate>{' '}
-                <span className="text-gray-900 font-semibold">{paragraphExtractorData.length}</span>
+                <span className="font-semibold text-gray-900">{paragraphExtractorData.length}</span>
               </div>
             </div>
           ) : (
