@@ -4,7 +4,6 @@ import { DBFixture } from 'api/utils/testing_db';
 import { EntityUpdatedEvent } from 'api/entities/events/EntityUpdatedEvent';
 import { EntityStatus } from 'api/paragraphExtraction/domain/PXEntityStatusModel';
 
-import { TestUtils } from 'api/common.v2/utils/Test';
 import { ObjectId } from 'mongodb';
 import { tenants } from 'api/tenants';
 import { PXEntityUpdatedListener } from '../PXEntityUpdatedListener';
@@ -199,16 +198,15 @@ describe('PXEntityUpdatedListener', () => {
         mongoPXEntitiesStatusCollection
       );
 
-      expect(entitiesStatus).toHaveLength(3);
-      TestUtils.arrayContaining(entitiesStatus, [
+      expect(entitiesStatus).toMatchObject([
+        entityStatus2,
+        entityStatus3,
         {
           _id: expect.any(ObjectId),
           status: EntityStatus.New,
           entitySharedId: entity1[0].sharedId,
           extractorId: extractor2._id,
         },
-        entityStatus2,
-        entityStatus3,
       ]);
     });
   });
