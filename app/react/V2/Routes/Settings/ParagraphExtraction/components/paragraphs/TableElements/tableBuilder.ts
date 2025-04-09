@@ -1,31 +1,33 @@
 import { createColumnHelper } from '@tanstack/react-table';
+import { TablePXEntityParagraphRow } from 'app/V2/shared/ParagraphExtractionTypes';
 import { generateTableHeader } from '../../../utils/generateTableHeader';
 import { LanguagesCell } from './LanguagesCell';
 import { ParagraphCountCell } from './ParagraphCountCell';
-import { PXParagraphTable } from '../../../types';
 import { ActionCell } from './ActionCell';
 import { TextCell } from './TextCell';
 
-const pxColumnHelper = createColumnHelper<PXParagraphTable>();
+const pxColumnHelper = createColumnHelper<TablePXEntityParagraphRow>();
 
 const tableBuilder = ({ onViewAction }: { onViewAction: (paragraphId: string) => void }) => [
-  pxColumnHelper.accessor('paragraphCount', {
+  pxColumnHelper.accessor('paragraphNumber', {
     header: generateTableHeader('Paragraph #'),
     cell: ParagraphCountCell,
     enableSorting: false,
+    meta: { headerClassName: 'w-1/6' },
   }),
-  pxColumnHelper.accessor('languages', {
+  pxColumnHelper.accessor('language', {
     header: generateTableHeader('Language'),
     cell: LanguagesCell,
-    enableSorting: true,
+    enableSorting: false,
+    meta: { headerClassName: 'w-1/6' },
   }),
-  pxColumnHelper.accessor('text', {
+  pxColumnHelper.accessor('paragraphText', {
     header: generateTableHeader('Text'),
     cell: TextCell,
-    meta: { headerClassName: 'w-5/6' },
-    enableSorting: true,
+    enableSorting: false,
+    meta: { headerClassName: 'w-4/6' },
   }),
-  pxColumnHelper.accessor('_id', {
+  pxColumnHelper.accessor('rowId', {
     header: generateTableHeader(''),
     cell: props =>
       ActionCell(() => {

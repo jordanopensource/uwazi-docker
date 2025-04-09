@@ -7,7 +7,9 @@ import { MongoResultSet } from 'api/common.v2/database/MongoResultSet';
 
 import {
   GetEntityParagraphRelationshipsOutput,
-  GetEntityParagrphRelationshipsInput,
+  GetEntityParagraphRelationshipsInput,
+  GetExtractedParagraphsOutput,
+  GetExtractedParagraphsInput,
   GetExtractorsOutput,
   GetExtractorStatusesInput,
   GetExtractorStatusesOutput,
@@ -17,6 +19,13 @@ import { EntityStatus } from '../domain/PXEntityStatusModel';
 import { MongoPXExtractorDBO } from './MongoPXExtractorDBO';
 import { mongoPXExtractorsCollection } from './MongoPXExtractorsDataSource';
 import { mongoPXEntitiesStatusCollection } from './MongoPXEntitiesStatusDataSource';
+
+const getDefaultPagination = (inputNumber?: number, inputSize?: number) => {
+  const number = inputNumber || 1;
+  const size = inputSize || 10;
+  const skip = (number - 1) * size;
+  return { number, size, skip };
+};
 
 class MongoPXExtractorsQueryService
   extends MongoDataSource<MongoPXExtractorDBO>
@@ -92,6 +101,8 @@ class MongoPXExtractorsQueryService
           sourceTemplateId: 1,
           targetTemplateId: 1,
           statusCount: 1,
+          paragraphNumberPropertyId: 1,
+          paragraphPropertyId: 1,
         },
       },
     ]);
@@ -103,15 +114,15 @@ class MongoPXExtractorsQueryService
           _id: item._id.toString(),
           sourceTemplateId: item.sourceTemplateId.toString(),
           targetTemplateId: item.targetTemplateId.toString(),
+          paragraphNumberPropertyId: item.paragraphNumberPropertyId.toString(),
+          paragraphPropertyId: item.paragraphPropertyId.toString(),
           statusCount: item.statusCount,
         }) as GetExtractorsOutput
     );
   }
 
   getExtractorStatuses(input: GetExtractorStatusesInput): ResultSet<GetExtractorStatusesOutput> {
-    const number = input.page?.number || 1;
-    const size = input.page?.size || 10;
-    const skip = (number - 1) * size;
+    const { number, size, skip } = getDefaultPagination(input.page?.number, input.page?.size);
 
     const cursor = this.getCollection().aggregate([
       { $match: { _id: ObjectId.createFromHexString(input.id) } },
@@ -186,7 +197,7 @@ class MongoPXExtractorsQueryService
   }
 
   getEntityParagraphRelationships(
-    input: GetEntityParagrphRelationshipsInput
+    input: GetEntityParagraphRelationshipsInput
   ): ResultSet<GetEntityParagraphRelationshipsOutput> {
     const cursor = this.getCollection().aggregate([
       { $match: { _id: ObjectId.createFromHexString(input.extractorId) } },
@@ -209,27 +220,29 @@ class MongoPXExtractorsQueryService
           as: 'entityStatuses',
         },
       },
-      {
-        $unwind: '$entityStatuses',
-      },
+      { $unwind: { path: '$entityStatuses', preserveNullAndEmptyArrays: false } },
       {
         $lookup: {
           from: 'connections',
           localField: 'entityStatuses.entitySharedId',
           foreignField: 'entity',
-          as: 'sourceConnections',
+          as: 'sourceRelationships',
         },
       },
       {
-        $unwind: '$sourceConnections',
+        $unwind: '$sourceRelationships',
       },
       {
-        $match: { $expr: { $eq: ['$sourceConnections.template', '$sourceRelationshipTypeId'] } },
+        $match: { $expr: { $eq: ['$sourceRelationships.template', '$sourceRelationshipTypeId'] } },
       },
       {
         $lookup: {
           from: 'connections',
-          let: { hubValue: '$sourceConnections.hub', targetTemplate: '$targetRelationshipTypeId' },
+          let: {
+            hubValue: '$sourceRelationships.hub',
+            targetTemplate: '$targetRelationshipTypeId',
+            expectedTemplateId: '$targetTemplateId',
+          },
           pipeline: [
             {
               $match: {
@@ -241,12 +254,46 @@ class MongoPXExtractorsQueryService
                 },
               },
             },
+            {
+              $lookup: {
+                from: 'entities',
+                let: {
+                  targetEntityId: '$entity',
+                  expectedTemplate: '$$expectedTemplateId',
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$sharedId', '$$targetEntityId'] },
+                          { $eq: ['$template', '$$expectedTemplate'] },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: 'matchingEntities',
+              },
+            },
+            {
+              $match: {
+                matchingEntities: { $ne: [] },
+              },
+            },
           ],
-          as: 'targetConnections',
+          as: 'targetRelationships',
         },
       },
-      { $unwind: '$targetConnections' },
-      { $replaceRoot: { newRoot: '$targetConnections' } },
+      { $unwind: '$targetRelationships' },
+      {
+        $project: {
+          _id: '$targetRelationships._id',
+          entity: '$targetRelationships.entity',
+          hub: '$targetRelationships.hub',
+          template: '$targetRelationships.template',
+        },
+      },
     ]);
 
     return new MongoResultSet(cursor, item => ({
@@ -255,6 +302,95 @@ class MongoPXExtractorsQueryService
       hubId: item.hub.toString(),
       relationshipTypeId: item.template.toString(),
     }));
+  }
+
+  getExtractedParagraphs(
+    input: GetExtractedParagraphsInput
+  ): ResultSet<GetExtractedParagraphsOutput> {
+    const { number, size, skip } = getDefaultPagination(input.page?.number, input.page?.size);
+    const cursor = this.getCollection('entities').aggregate([
+      {
+        $match: {
+          sharedId: { $in: input.ids },
+        },
+      },
+      {
+        $addFields: {
+          languageSortOrder: {
+            $cond: {
+              if: { $eq: ['$language', input.mainLanguage] },
+              then: 0,
+              else: 1,
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          sharedId: 1,
+          languageSortOrder: 1,
+          language: 1,
+        },
+      },
+      {
+        $group: {
+          _id: '$sharedId',
+          entities: { $push: '$$ROOT' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'entities',
+          let: { sharedId: '$_id' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$sharedId', '$$sharedId'] } } },
+            { $sort: { [`metadata.${input.paragraphNumberProperty}.value`]: 1 } },
+            { $limit: 1 },
+          ],
+          as: 'sortedMetadata',
+        },
+      },
+      {
+        $addFields: {
+          sortValue: {
+            $arrayElemAt: [`$sortedMetadata.metadata.${input.paragraphNumberProperty}.value`, 0],
+          },
+        },
+      },
+      {
+        $sort: { sortValue: 1 },
+      },
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          rows: [{ $skip: skip }, { $limit: size }],
+        },
+      },
+      {
+        $addFields: {
+          totalRows: { $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0] },
+          page: { number, size },
+        },
+      },
+      {
+        $project: {
+          rows: {
+            $map: {
+              input: '$rows',
+              as: 'row',
+              in: {
+                sharedId: '$$row._id',
+                entities: '$$row.entities',
+              },
+            },
+          },
+          totalRows: 1,
+          page: 1,
+        },
+      },
+    ]);
+
+    return new MongoResultSet(cursor, item => item as GetExtractedParagraphsOutput);
   }
 }
 

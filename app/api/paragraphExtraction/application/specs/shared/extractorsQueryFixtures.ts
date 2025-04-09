@@ -11,13 +11,16 @@ import { mongoPXEntitiesStatusCollection } from '../../../infrastructure/MongoPX
 import { MongoPXEntityStatusDBO } from '../../../infrastructure/MongoPXEntityStatusDBO';
 
 const f = getFixturesFactory();
+
 const sourceTemplate1 = f.template('Source Template');
 const sourceTemplate2 = f.template('Source Template 2');
 const sourceTemplate3 = f.template('Source Template 3');
-const targetTemplate1 = f.template('Target Template');
-const templateWithoutExtractor = f.template('Template');
+
 const paragraphProperty = f.property('rich_text', 'markdown');
 const paragraphNumberProperty = f.property('paragraph_number_property', 'numeric');
+const targetTemplate1 = f.template('Target Template', [paragraphProperty, paragraphNumberProperty]);
+
+const templateWithoutExtractor = f.template('Template');
 
 const sourceRelationshipType = {
   _id: new ObjectId(),
@@ -79,6 +82,10 @@ const [entityWithoutExtractorEn] = f.entityInMultipleLanguages(
 );
 
 const fileEntity1En = f.document('fileEntity1En', { language: 'en', entity: entity1En.sharedId });
+const secondFileEntity1En = f.document('secondFileEntity1En', {
+  language: 'en',
+  entity: entity1En.sharedId,
+});
 const fileEntity1Pt = f.document('fileEntity1Pt', { language: 'pt', entity: entity1En.sharedId });
 const fileEntity1It = f.document('fileEntity1It', { language: 'it', entity: entity1En.sharedId });
 const fileEntity2It = f.document('fileEntity2En', { language: 'it', entity: entity2En.sharedId });
@@ -87,17 +94,65 @@ const fileEntity4En = f.document('fileEntity4En', { language: 'en', entity: enti
 const [paragraph1Entity1En, paragraph1Entity1Pt] = f.entityInMultipleLanguages(
   lang,
   'paragraph1En1',
-  targetTemplate1.name
+  targetTemplate1.name,
+  {},
+  {},
+  {
+    en: {
+      metadata: {
+        [paragraphProperty.name]: [{ value: 'Entity 1 Paragraph 1 EN, number 2' }],
+        [paragraphNumberProperty.name]: [{ value: 2 }],
+      },
+    },
+    pt: {
+      metadata: {
+        [paragraphProperty.name]: [{ value: 'Entity 1 Paragraph 1 PT, number 2' }],
+        [paragraphNumberProperty.name]: [{ value: 2 }],
+      },
+    },
+  }
 );
 const [paragraph2Entity1En, paragraph2Entity1Pt] = f.entityInMultipleLanguages(
   lang,
   'paragraph2En1',
-  targetTemplate1.name
+  targetTemplate1.name,
+  {},
+  {},
+  {
+    en: {
+      metadata: {
+        [paragraphProperty.name]: [{ value: 'Entity 1 Paragraph 2 EN, number 1' }],
+        [paragraphNumberProperty.name]: [{ value: 1 }],
+      },
+    },
+    pt: {
+      metadata: {
+        [paragraphProperty.name]: [{ value: 'Entity 1 Paragraph 2 PT, number 1' }],
+        [paragraphNumberProperty.name]: [{ value: 1 }],
+      },
+    },
+  }
 );
 const [paragraph3Entity1En, paragraph3Entity1Pt] = f.entityInMultipleLanguages(
   lang,
   'paragraph3En1',
-  targetTemplate1.name
+  targetTemplate1.name,
+  {},
+  {},
+  {
+    en: {
+      metadata: {
+        [paragraphProperty.name]: [{ value: 'Entity 1 Paragraph 3 EN, number 3' }],
+        [paragraphNumberProperty.name]: [{ value: 3 }],
+      },
+    },
+    pt: {
+      metadata: {
+        [paragraphProperty.name]: [{ value: 'Entity 1 Paragraph 3 PT, number 3' }],
+        [paragraphNumberProperty.name]: [{ value: 3 }],
+      },
+    },
+  }
 );
 const [paragraph1Entity5En, paragraph1Entity5Pt] = f.entityInMultipleLanguages(
   lang,
@@ -122,6 +177,13 @@ const relationshipP1Hub1 = {
 const relationshipP2Hub1 = {
   _id: f.id('relationshipP2Hub1'),
   entity: paragraph2Entity1En.sharedId,
+  hub: f.id('hub1'),
+  template: ObjectId.createFromHexString(targetRelationshipType._id.toString()),
+};
+
+const relationshipNotParagraphHub1 = {
+  _id: f.id('relationshipNotParagraphHub1'),
+  entity: entityWithoutExtractorEn.sharedId,
   hub: f.id('hub1'),
   template: ObjectId.createFromHexString(targetRelationshipType._id.toString()),
 };
@@ -263,6 +325,7 @@ const relationshipFixtures = {
   relationshipE1Hub1,
   relationshipP1Hub1,
   relationshipP2Hub1,
+  relationshipNotParagraphHub1,
   relationshipE1Hub2,
   relationshipP3Hub2,
   relationshipE5Hub3,
@@ -275,7 +338,14 @@ const fixtures = {
   [mongoPXEntitiesStatusCollection]: Object.values(entityStatusFixtures).map(value => value),
   templates: [sourceTemplate1, sourceTemplate2, targetTemplate1],
   entities: Object.values(entityFixtures).map(value => value),
-  files: [fileEntity1En, fileEntity1Pt, fileEntity1It, fileEntity2It, fileEntity4En],
+  files: [
+    fileEntity1En,
+    secondFileEntity1En,
+    fileEntity1Pt,
+    fileEntity1It,
+    fileEntity2It,
+    fileEntity4En,
+  ],
   connections: Object.values(relationshipFixtures).map(value => value),
   settings: [
     {
@@ -299,4 +369,6 @@ export {
   sourceTemplate2,
   sourceTemplate3,
   targetTemplate1,
+  paragraphProperty,
+  paragraphNumberProperty,
 };

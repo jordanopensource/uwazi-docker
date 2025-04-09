@@ -15,33 +15,26 @@ const get = async (headers?: IncomingHttpHeaders): Promise<Extractor[]> => {
 };
 
 const save = async (extractorValues: ParagraphExtractorApiPayload): Promise<Extractor> => {
-  //model values to be sent to backend, adjust this to satisfy backend requirements
   const modelPayload = {
     sourceTemplateId: extractorValues.sourceTemplateId,
     targetTemplateId: extractorValues.targetTemplateId,
     paragraphPropertyId: extractorValues.paragraphPropertyId,
     paragraphNumberPropertyId: extractorValues.paragraphNumberPropertyId,
-    // api requires these two fields, but only one field is on the design
-    sourceRelationshipTypeId: extractorValues.relationshipId,
-    targetRelationshipTypeId: extractorValues.relationshipId,
+    sourceRelationshipTypeId: extractorValues.sourceRelationshipId,
+    targetRelationshipTypeId: extractorValues.targetRelationshipId,
   };
 
   const requestParams = new RequestParams(modelPayload);
-  // this returns an id of the created extractor,
-  // probably should be used if ever we want to redirect to created extractor page with entities
   return api.post('paragraphExtraction/extractor', requestParams);
 };
 
-const remove = async (ids: PXTable[]) => {
-  //model values to be sent to backend, adjust this to satisfy backend requirements
-  const modeledPayload = {
-    ids: ids.map(id => id._id),
-  };
-
-  const requestParams = new RequestParams(modeledPayload);
-  return Promise.resolve();
-  // uncomment this once backend is ready
-  // return api.delete('paragraphExtraction/extractor', requestParams);
-};
+const remove = async (extractors: PXTable[]) =>
+  Promise.all(
+    extractors.map(extractor => {
+      const id = extractor._id;
+      const requestParams = new RequestParams({ id });
+      return api.delete('paragraphExtraction/extractor', requestParams);
+    })
+  );
 
 export { get, save, remove };

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Button } from 'V2/Components/UI';
 import { Translate } from 'app/I18N';
-import * as extractorsAPI from 'app/V2/api/paragraphExtractor/extractors';
+import { isClient } from 'app/utils';
+import { captureException } from '@sentry/react';
+import * as extractorsAPI from 'V2/api/paragraphExtractor/extractors';
+import { notificationAtom } from 'V2/atoms';
 import { useRevalidator } from 'react-router';
 import { useSetAtom } from 'jotai';
-import { notificationAtom } from 'app/V2/atoms';
 import { useCreateExtractorContext } from '../../CreateExtractorContext';
 
 const Footer = () => {
@@ -17,10 +19,10 @@ const Footer = () => {
     setShowModal,
     paragraphPropertyId,
     paragraphNumberPropertyId,
-    relationshipId,
+    targetRelationshipId,
+    sourceRelationshipId,
   } = useCreateExtractorContext();
 
-  // TODO: should be moved to context?
   const handleSubmit = async () => {
     try {
       const values = {
@@ -28,7 +30,8 @@ const Footer = () => {
         targetTemplateId,
         paragraphPropertyId,
         paragraphNumberPropertyId,
-        relationshipId,
+        targetRelationshipId,
+        sourceRelationshipId,
       };
       await extractorsAPI.save(values);
       setShowModal(false);
@@ -38,8 +41,10 @@ const Footer = () => {
         text: <Translate>Paragraph Extractor added</Translate>,
       });
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving extractor:', e);
+      if (isClient) {
+        const error = new Error('Error saving extractor', { cause: e });
+        captureException(error);
+      }
     }
   };
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 import { ObjectId } from 'mongodb';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import { DBFixture } from 'api/utils/testing_db';
@@ -17,6 +18,8 @@ import {
   sourceTemplate3,
   targetTemplate1,
   relationshipFixtures,
+  paragraphNumberProperty,
+  paragraphProperty,
 } from '../../application/specs/shared/extractorsQueryFixtures';
 
 import { MongoPXExtractorsQueryService } from '../MongoPXExtractorsQueryService';
@@ -29,9 +32,7 @@ const setUpSut = () => {
 
   const extractorsQueryService = new MongoPXExtractorsQueryService(db, transaction);
 
-  return {
-    extractorsQueryService,
-  };
+  return { extractorsQueryService };
 };
 
 describe('MongoPXExtractorsQueryService', () => {
@@ -54,18 +55,24 @@ describe('MongoPXExtractorsQueryService', () => {
           _id: extractor1._id.toString(),
           sourceTemplateId: sourceTemplate1._id.toString(),
           targetTemplateId: targetTemplate1._id.toString(),
+          paragraphNumberPropertyId: paragraphNumberProperty._id?.toString(),
+          paragraphPropertyId: paragraphProperty._id?.toString(),
           statusCount: { new: 3, processing: 1, obsolete: 2, error: 1, processed: 1, total: 8 },
         },
         {
           _id: extractor2._id.toString(),
           sourceTemplateId: sourceTemplate2._id.toString(),
           targetTemplateId: targetTemplate1._id.toString(),
+          paragraphNumberPropertyId: paragraphNumberProperty._id?.toString(),
+          paragraphPropertyId: paragraphProperty._id?.toString(),
           statusCount: { new: 1, processing: 0, obsolete: 0, error: 0, processed: 0, total: 1 },
         },
         {
           _id: extractorWithoutEntities._id.toString(),
           sourceTemplateId: sourceTemplate3._id.toString(),
           targetTemplateId: targetTemplate1._id.toString(),
+          paragraphNumberPropertyId: paragraphNumberProperty._id?.toString(),
+          paragraphPropertyId: paragraphProperty._id?.toString(),
           statusCount: { new: 0, processing: 0, obsolete: 0, error: 0, processed: 0, total: 0 },
         },
       ]);
@@ -204,6 +211,92 @@ describe('MongoPXExtractorsQueryService', () => {
       expect(entity5Paragraphs).toMatchObject([
         mappedRelationship(relationshipFixtures.relationshipP1Hub3),
       ]);
+    });
+  });
+
+  describe('getExtractedParagraphs', () => {
+    it('should return paragraphs, correctly paginated, grupped by sharedId and ordered by paragraph number and main language', async () => {
+      const { extractorsQueryService } = setUpSut();
+
+      const entity1ParagraphsPg1 = await extractorsQueryService
+        .getExtractedParagraphs({
+          ids: [
+            entityFixtures.paragraph1Entity1En.sharedId!,
+            entityFixtures.paragraph1Entity1Pt.sharedId!,
+            entityFixtures.paragraph2Entity1En.sharedId!,
+            entityFixtures.paragraph2Entity1Pt.sharedId!,
+            entityFixtures.paragraph3Entity1En.sharedId!,
+            entityFixtures.paragraph3Entity1Pt.sharedId!,
+          ],
+          paragraphNumberProperty: paragraphNumberProperty.name,
+          mainLanguage: 'pt',
+          page: { number: 1, size: 2 },
+        })
+        .first();
+
+      expect(entity1ParagraphsPg1?.totalRows).toBe(3);
+      expect(entity1ParagraphsPg1?.page).toMatchObject({ number: 1, size: 2 });
+      expect(entity1ParagraphsPg1?.rows[0]).toMatchObject({
+        sharedId: entityFixtures.paragraph2Entity1En.sharedId,
+        entities: [
+          { _id: entityFixtures.paragraph2Entity1Pt._id },
+          { _id: entityFixtures.paragraph2Entity1En._id },
+        ],
+      });
+      expect(entity1ParagraphsPg1?.rows[1]).toMatchObject({
+        sharedId: entityFixtures.paragraph1Entity1En.sharedId,
+        entities: [
+          { _id: entityFixtures.paragraph1Entity1Pt._id },
+          { _id: entityFixtures.paragraph1Entity1En._id },
+        ],
+      });
+
+      const entity1ParagraphsPg2 = await extractorsQueryService
+        .getExtractedParagraphs({
+          ids: [
+            entityFixtures.paragraph1Entity1En.sharedId!,
+            entityFixtures.paragraph1Entity1Pt.sharedId!,
+            entityFixtures.paragraph2Entity1En.sharedId!,
+            entityFixtures.paragraph2Entity1Pt.sharedId!,
+            entityFixtures.paragraph3Entity1En.sharedId!,
+            entityFixtures.paragraph3Entity1Pt.sharedId!,
+          ],
+          paragraphNumberProperty: paragraphNumberProperty.name,
+          mainLanguage: 'pt',
+          page: { number: 2, size: 2 },
+        })
+        .first();
+
+      expect(entity1ParagraphsPg2?.totalRows).toBe(3);
+      expect(entity1ParagraphsPg2?.page).toMatchObject({ number: 2, size: 2 });
+      expect(entity1ParagraphsPg2?.rows[0]).toMatchObject({
+        sharedId: entityFixtures.paragraph3Entity1En.sharedId,
+        entities: [
+          { _id: entityFixtures.paragraph3Entity1Pt._id },
+          { _id: entityFixtures.paragraph3Entity1En._id },
+        ],
+      });
+
+      const entity5Paragraphs = await extractorsQueryService
+        .getExtractedParagraphs({
+          ids: [
+            entityFixtures.paragraph1Entity5En.sharedId!,
+            entityFixtures.paragraph1Entity5Pt.sharedId!,
+          ],
+          paragraphNumberProperty: paragraphNumberProperty.name,
+          mainLanguage: 'en',
+        })
+        .first();
+
+      expect(entity5Paragraphs?.totalRows).toBe(1);
+      expect(entity5Paragraphs?.page).toMatchObject({ number: 1, size: 10 });
+      expect(entity5Paragraphs?.rows[0]).toMatchObject({
+        sharedId: entityFixtures.paragraph1Entity5En.sharedId,
+        entities: [
+          { _id: entityFixtures.paragraph1Entity5En._id },
+          { _id: entityFixtures.paragraph1Entity5Pt._id },
+        ],
+      });
     });
   });
 });

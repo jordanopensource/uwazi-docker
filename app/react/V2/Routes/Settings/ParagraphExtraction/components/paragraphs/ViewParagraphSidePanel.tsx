@@ -1,14 +1,15 @@
 import React from 'react';
+import { Link } from 'react-router';
 import { Translate } from 'app/I18N';
 import { Button } from 'app/V2/Components/UI';
 import { Sidepanel } from 'app/V2/Components/UI/Sidepanel';
+import { TablePXEntityParagraphRow } from 'app/V2/shared/ParagraphExtractionTypes';
 import { ViewParagraph } from './ViewParagraph';
-import { PXParagraphTable } from '../../types';
 
 type ViewParagraphSidePanelProps = {
   isSidePanelOpen: boolean;
   setIsSidePanelOpen: (isSidePanelOpen: boolean) => void;
-  paragraphOnView: PXParagraphTable | undefined;
+  paragraphOnView: TablePXEntityParagraphRow | undefined;
 };
 
 const ViewParagraphSidePanel = ({
@@ -28,14 +29,19 @@ const ViewParagraphSidePanel = ({
       </span>
     }
   >
-    <Sidepanel.Body>
+    <Sidepanel.Body className="flex-grow overflow-y-scroll">
       {paragraphOnView && <ViewParagraph paragraphData={paragraphOnView} />}
     </Sidepanel.Body>
     <Sidepanel.Footer className="px-4 py-3 border-t">
       <div className="flex gap-2 justify-end">
-        <Button size="small" styling="outline">
-          <Translate>View entity</Translate>
-        </Button>
+        <Link
+          to={`/${paragraphOnView?.language}/entity/${paragraphOnView?.sharedId}`}
+          target="_blank"
+        >
+          <Button size="small" styling="outline">
+            <Translate>View entity</Translate>
+          </Button>
+        </Link>
       </div>
     </Sidepanel.Footer>
   </Sidepanel>

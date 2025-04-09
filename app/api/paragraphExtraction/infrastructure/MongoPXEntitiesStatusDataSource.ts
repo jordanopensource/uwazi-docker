@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import { Db, ObjectId } from 'mongodb';
 
 import { MongoDataSource, MongoDSOptions } from 'api/common.v2/database/MongoDataSource';
@@ -7,11 +6,13 @@ import { SettingsDataSource } from 'api/settings.v2/contracts/SettingsDataSource
 import { MongoTransactionManager } from 'api/common.v2/database/MongoTransactionManager';
 import { LanguagesListSchema } from 'shared/types/commonTypes';
 
+import { ResultSet } from 'api/common.v2/contracts/ResultSet';
+import { MongoResultSet } from 'api/common.v2/database/MongoResultSet';
+import { OperationalError } from 'api/common.v2/errors/OperationalError';
 import {
   CreateForSourceEntitiesInput,
   CreateInput,
   GetExistingInput,
-  MarkAsQueuedInput,
   PXEntitiesStatusDataSource,
 } from '../domain/PXEntitiesStatusDataSource';
 import { EntityStatus, PXEntityStatusModel } from '../domain/PXEntityStatusModel';
@@ -97,22 +98,6 @@ export class MongoPXEntitiesStatusDataSource
     await this.getCollection().insertMany(entityStatuses, { session: this.getSession() });
   }
 
-  async setAsError(extractionId: string): Promise<PXEntityStatusModel> {
-    const dbo = await this.getCollection().findOneAndUpdate(
-      { _id: new ObjectId(extractionId) },
-      { $set: { status: EntityStatus.Error } },
-      { upsert: false, returnDocument: 'after' }
-    );
-
-    if (!dbo) {
-      throw new Error(
-        `Can not set an error of an Entity Status that does not exist. Id : ${extractionId}`
-      );
-    }
-
-    return MongoPXEntitiesStatusDataSource.toDomain(dbo);
-  }
-
   async createAsNew(input: CreateInput): Promise<PXEntityStatusModel> {
     const dbo: MongoPXEntityStatusDBO = {
       _id: new ObjectId(),
@@ -171,6 +156,20 @@ export class MongoPXEntitiesStatusDataSource
     return MongoPXEntitiesStatusDataSource.toDomain(mongoEntityStatus);
   }
 
+  async markAsError(extractionId: string): Promise<void> {
+    const result = await this.getCollection().updateOne(
+      { _id: new ObjectId(extractionId) },
+      { $set: { status: EntityStatus.Error } },
+      { upsert: false }
+    );
+
+    if (!result.modifiedCount) {
+      throw new OperationalError(
+        `Can not change the status to '${EntityStatus.Error}' of an EntityStatus that does not exist. Id : ${extractionId}`
+      );
+    }
+  }
+
   async markAsObsolete(entityStatusId: string): Promise<void> {
     const currentStatus = await this.getCollection().findOne(
       { _id: new ObjectId(entityStatusId) },
@@ -188,26 +187,23 @@ export class MongoPXEntitiesStatusDataSource
     );
   }
 
-  async markAsProcessing(input: MarkAsQueuedInput): Promise<PXEntityStatusModel> {
-    const mongoEntityStatus = await this.getCollection().findOneAndUpdate(
+  async markAsProcessing(entityStatusId: string): Promise<void> {
+    const mongoEntityStatus = await this.getCollection().updateOne(
       {
-        extractorId: new ObjectId(input.extractorId),
-        entitySharedId: input.entitySharedId,
+        _id: new ObjectId(entityStatusId),
       },
       { $set: { status: EntityStatus.Processing } },
-      { upsert: false, returnDocument: 'after' }
+      { upsert: false }
     );
 
-    if (!mongoEntityStatus) {
-      throw new Error(
-        `Cannot change status to queued of a EntityStatus that does not exist. ${JSON.stringify(input)}`
+    if (!mongoEntityStatus.modifiedCount) {
+      throw new OperationalError(
+        `Cannot change status to '${EntityStatus.Processing}' of a EntityStatus that does not exist. entityStatusId: ${entityStatusId}`
       );
     }
-
-    return MongoPXEntitiesStatusDataSource.toDomain(mongoEntityStatus);
   }
 
-  async markAsFinished(entityStatusId: string): Promise<void> {
+  async markAsProcessed(entityStatusId: string): Promise<void> {
     await this.getCollection().updateOne(
       {
         _id: new ObjectId(entityStatusId),
@@ -223,5 +219,21 @@ export class MongoPXEntitiesStatusDataSource
 
   async deleteBySourceEntity(entitySharedId: string): Promise<void> {
     await this.getCollection().deleteOne({ entitySharedId });
+  }
+
+  getAll(input: Partial<PXEntityStatusModel>): ResultSet<PXEntityStatusModel> {
+    const query = {
+      entitySharedId: input.entitySharedId,
+      extractorId: input.extractorId && new ObjectId(input.extractorId),
+      status: input.status,
+    };
+
+    const sanitized = Object.fromEntries(
+      Object.entries(query).filter(([_, value]) => Boolean(value))
+    );
+
+    const cursor = this.getCollection().find(sanitized);
+
+    return new MongoResultSet(cursor, MongoPXEntitiesStatusDataSource.toDomain.bind(this));
   }
 }
