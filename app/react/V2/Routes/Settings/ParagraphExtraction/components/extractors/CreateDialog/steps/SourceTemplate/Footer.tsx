@@ -3,7 +3,6 @@ import { Button } from 'V2/Components/UI';
 import { Translate } from 'app/I18N';
 import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { useCreateExtractorContext } from '../../CreateExtractorContext';
-import { sourceTemplate } from 'api/paragraphExtraction/application/specs/fixtures';
 
 const Footer = () => {
   const { setStep, sourceTemplateId } = useCreateExtractorContext();
