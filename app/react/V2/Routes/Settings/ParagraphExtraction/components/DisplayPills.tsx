@@ -19,10 +19,10 @@ const adjustShade = (hexValue: string, percent: number, lighten: boolean): strin
   return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
 };
 
-const getDarkerShade = (hexValue: string, percent: number = 90): string =>
+const getDarkerShade = (hexValue: string, percent: number = 60): string =>
   adjustShade(hexValue, percent, false);
 
-const getLighterShade = (hexValue: string, percent: number = 90): string =>
+const getLighterShade = (hexValue: string, percent: number = 60): string =>
   adjustShade(hexValue, percent, true);
 
 const DisplayPill = ({
@@ -38,7 +38,7 @@ const DisplayPill = ({
   const style = { backgroundColor: bgColor, color: getDarkerShade(color) };
   return (
     <span
-      className={`${className ?? 'px-2.5 rounded-md text-xs block'}`}
+      className={`${className ?? 'py-1 px-2.5 rounded-md text-xs block'}`}
       style={style}
       data-testid="pill-comp"
     >
