@@ -4,7 +4,12 @@ import { ExtractionConfigurationStep } from './ExtractionConfiguration';
 
 const AddExtractorSteps: Record<
   number,
-  { Body: () => JSX.Element; Footer: () => JSX.Element; title: () => JSX.Element; description: () => JSX.Element | string }
+  {
+    Body: () => JSX.Element;
+    Footer: () => JSX.Element;
+    title: () => JSX.Element;
+    description: () => JSX.Element | string;
+  }
 > = {
   1: {
     Body: TargetTemplateStep.Body,

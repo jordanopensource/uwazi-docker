@@ -6,7 +6,7 @@ import { Translate } from 'app/I18N';
 const ExtractionConfigurationStep = {
   Body,
   Footer,
-  title: () => (<Translate>Extraction configuration</Translate>),
+  title: () => <Translate>Extraction configuration</Translate>,
   description: () => '',
 };
 
