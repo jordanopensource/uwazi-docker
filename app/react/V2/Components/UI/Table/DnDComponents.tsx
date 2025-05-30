@@ -109,6 +109,7 @@ const DraggableRow = <T extends TableRow<T>>({
 
   const rowStyles = getSytles(expanded, isOver);
 
+  const className = row.getAllCells().at(0)?.column.columnDef.meta?.className || '';
   return (
     <>
       <tr
