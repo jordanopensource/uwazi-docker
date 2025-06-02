@@ -286,7 +286,7 @@ class InformationExtraction {
             return;
           }
 
-          data.label_text = labelText;
+          data.label_text = String(labelText);
         }
       }
 
