@@ -24,29 +24,33 @@ const templatesLoader =
     return templates.map((template: ClientTemplateSchema) => {
       const reasons = [];
       if (template.default) {
-        reasons.push(
-          <Translate className="inline-block">A default template cannot be deleted.</Translate>
-        );
+        reasons.push(<Translate>A default template cannot be deleted.</Translate>);
       }
       if (entityCounts[template._id] > 0) {
         reasons.push(
-          <Translate className="inline-block">
-            This template is in use by existing entities and cannot be deleted.
-          </Translate>
+          <Translate>This template is in use by existing entities and cannot be deleted.</Translate>
         );
       }
       if (template.synced) {
-        reasons.push(
-          <Translate className="inline-block">Synced templates cannot be deleted.</Translate>
-        );
+        reasons.push(<Translate>Synced templates cannot be deleted.</Translate>);
       }
+
+      const disableRowSelection =
+        reasons.length > 0
+          ? reasons.map((reason, index) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <span key={index} className="inline-block">
+                {reason}
+              </span>
+            ))
+          : undefined;
 
       return {
         ...template,
         rowId: template._id,
         translation: template.name,
         entityCount: entityCounts[template._id] || 0,
-        disableRowSelection: reasons.length > 0 ? reasons : undefined,
+        disableRowSelection,
       };
     });
   };
