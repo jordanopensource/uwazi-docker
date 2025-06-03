@@ -143,7 +143,7 @@ const columns = (
       header: DefaultHeader,
       cell: DefaultButton(handleSetDefault),
       enableSorting: false,
-      meta: { headerClassName: 'w-1/12 text-center', contentClassName: 'text-center' },
+      meta: { headerClassName: 'w-2/12 text-center', contentClassName: 'text-center' },
     }),
     columnHelper.accessor('_id', {
       id: 'actions',
