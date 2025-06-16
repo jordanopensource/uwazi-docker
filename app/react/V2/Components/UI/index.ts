@@ -16,6 +16,7 @@ export { PaginationState } from './PaginationState';
 export { MediaPlayer } from './MediaPlayer';
 export { FileIcon } from './FileIcon';
 export { NeedAuthorization } from './NeedAuthorization';
+export { ConfirmNavigationModal } from './ConfirmNavigationModal';
 export { TruncatedText } from './TruncatedText';
 
 export type { PillColor } from './Pill';
