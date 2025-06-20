@@ -7,11 +7,8 @@ import { Translate } from 'app/I18N/Translate';
 import { propertyIcons } from 'V2/Components/UI/Icons';
 import { Pill } from 'V2/Components/UI';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
-<<<<<<< HEAD
-=======
 import { useAtomValue } from 'jotai';
 import { thesauriAtom, templatesAtom, relationshipTypesAtom } from 'V2/atoms';
->>>>>>> origin/templatesv2-fix-2
 import { translationsKeys } from '../helpers';
 
 type PropertyRow = PropertySchema & {
