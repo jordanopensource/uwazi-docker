@@ -123,12 +123,12 @@ const OptionsCell = ({ row }: CellContext<PropertyRow, any>) => {
     {
       key: 'style-cover',
       condition: property.style === 'cover',
-      label: <Translate>Cover</Translate>,
+      label: <Translate>Fill</Translate>,
     },
     {
       key: 'style-contain',
       condition: property.style === 'contain',
-      label: <Translate>Contain</Translate>,
+      label: <Translate>Fit</Translate>,
     },
     {
       key: 'relation-type',
