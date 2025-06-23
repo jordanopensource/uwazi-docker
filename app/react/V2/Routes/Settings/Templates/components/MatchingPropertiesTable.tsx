@@ -83,8 +83,6 @@ function thesauriCellRenderer(
 function entitiesCellRenderer(content: string | undefined, templates: ClientTemplateSchema[]) {
   return (cell: CellContext<MatchingPropRow, string | undefined>) => {
     const value = cell.getValue();
-    console.log('value', value);
-    console.log('content', content);
     const matches = value === content || (!content && !value);
     const foundTemplate = templates.find(tmpl => tmpl._id === value);
     const displayValue = foundTemplate ? (
