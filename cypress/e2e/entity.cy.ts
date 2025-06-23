@@ -163,8 +163,6 @@ describe('Entities', () => {
       cy.wrap(propertyTypes).each((propertyType: string) => {
         cy.contains('button', 'Add property').click();
 
-        //cy.contains('New property').should('be.visible');
-
         cy.get('select[id="property-type"]').select(propertyType);
 
         if (propertyType === 'Select' || propertyType === 'Multiple select') {
@@ -179,69 +177,12 @@ describe('Entities', () => {
         }
 
         cy.contains('aside button', 'Add property').click();
-
-        //cy.contains('New property').should('not.be.visible');
       });
 
       cy.contains('button', 'Save').click();
       cy.contains('success').should('exist');
       cy.contains('Dismiss').click();
     });
-
-    /*
-    it('should add another select of type multiselect', () => {
-      // Click Add property button to open the sidepanel
-      cy.contains('button', 'Add property').click();
-
-      // Wait for the sidepanel to open
-      cy.contains('h1', 'NEW PROPERTY').should('be.visible');
-
-      // Select multiselect type
-      cy.get('select[id="property-type"]').select('Multiple select');
-
-      // Set label
-      cy.get('input[id="property-label"]').clear();
-      cy.get('input[id="property-label"]').type('Multiselect', { delay: 0 });
-
-      // Add the property
-      cy.contains('button', 'Add property').click();
-
-      // Wait for sidepanel to close
-      cy.contains('h1', 'NEW PROPERTY').should('not.exist');
-    });
-
-    it('should add multidate, date range and multidate range', () => {
-      // Add multidate property
-      cy.contains('button', 'Add property').click();
-      cy.contains('h1', 'NEW PROPERTY').should('be.visible');
-      cy.get('select[id="property-type"]').select('Multiple dates');
-      cy.get('input[id="property-label"]').clear();
-      cy.get('input[id="property-label"]').type('Multi Date', { delay: 0 });
-      cy.contains('button', 'Add property').click();
-      cy.contains('h1', 'NEW PROPERTY').should('not.exist');
-
-      // Add date range property
-      cy.contains('button', 'Add property').click();
-      cy.contains('h1', 'NEW PROPERTY').should('be.visible');
-      cy.get('select[id="property-type"]').select('Date range');
-      cy.get('input[id="property-label"]').clear();
-      cy.get('input[id="property-label"]').type('Date Range', { delay: 0 });
-      cy.contains('button', 'Add property').click();
-      cy.contains('h1', 'NEW PROPERTY').should('not.exist');
-
-      // Add multidate range property
-      cy.contains('button', 'Add property').click();
-      cy.contains('h1', 'NEW PROPERTY').should('be.visible');
-      cy.get('select[id="property-type"]').select('Multiple date ranges');
-      cy.get('input[id="property-label"]').clear();
-      cy.get('input[id="property-label"]').type('Multi Date Range', { delay: 0 });
-      cy.contains('button', 'Add property').click();
-      cy.contains('h1', 'NEW PROPERTY').should('not.exist');
-
-      // Save the template
-      cy.contains('button', 'Save').click();
-      cy.get('div.alert-success').should('exist');
-    });*/
   });
 
   describe('Entity Metadata', () => {
