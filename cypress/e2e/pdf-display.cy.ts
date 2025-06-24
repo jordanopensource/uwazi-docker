@@ -20,7 +20,7 @@ describe('PDF display', () => {
     it('should setup the template', () => {
       cy.contains('a', 'Settings').click();
       cy.contains('a', 'Templates').click();
-      cy.contains('a', 'Document').click();
+      cy.contains('td a', 'Document').click();
       cy.contains('button', 'Add property').click();
 
       cy.get('select[id="property-type"]').select('Text');
