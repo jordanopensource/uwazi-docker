@@ -636,16 +636,16 @@ Properties from other templates in the collection using the same label.,Properti
 Property,Property
 Property as filter description,"This property will be used for filtering the library results. When properties match in equal name and field type with other entity types, they will be combined for filtering."
 property date,Date
-property daterange,Date Range
+property daterange,Date range
 property generatedid,Generated ID
 property geolocation,Geolocation
 property image,Image
 property link,Link
-property markdown,Rich Text
+property markdown,Rich text
 property media,Media
-property multidate,Multi Date
-property multidaterange,Multi Date Range
-property multiselect,Multiselect
+property multidate,Multiple date
+property multidaterange,Multiple date range
+property multiselect,Multiple select
 property numeric,Numeric
 property preview,Preview
 property relationship,Relationship
