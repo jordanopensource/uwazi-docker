@@ -113,6 +113,22 @@ const IXSuggestions = () => {
     }
   };
 
+  const findSuggestions = async (suggestionsToFind: TableSuggestion[]) => {
+    try {
+      await suggestionsAPI.findSelectedSuggestions(
+        extractor._id!,
+        suggestionsToFind.map(s => s._id)
+      );
+      await revalidate();
+    } catch (error) {
+      setNotifications({
+        type: 'error',
+        text: <Translate>An error occurred</Translate>,
+        details: error.json?.prettyMessage ? error.json.prettyMessage : undefined,
+      });
+    }
+  };
+
   const trainModelOrCancelAction = async () => {
     try {
       keepRowOrder.current = false;
@@ -263,9 +279,19 @@ const IXSuggestions = () => {
           />
         </SettingsContent.Body>
 
-        <SettingsContent.Footer className={`flex gap-2 ${selected.length ? 'bg-gray-200' : ''}`}>
+        <SettingsContent.Footer className="flex gap-2" highlighted={selected.length > 0}>
           {selected.length ? (
             <div className="flex items-center justify-center space-x-4">
+              <Button
+                size="small"
+                type="button"
+                styling="outline"
+                onClick={async () => {
+                  await findSuggestions(selected);
+                }}
+              >
+                <Translate>Find suggestion</Translate>
+              </Button>
               <Button
                 size="small"
                 type="button"

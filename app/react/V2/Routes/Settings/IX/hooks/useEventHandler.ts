@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 import { useEffect } from 'react';
 import { useRevalidator } from 'react-router';
 import { socket } from 'app/socket';
@@ -67,12 +68,16 @@ const useEventHandler = ({ extractorId, updateStatus }: useEventHandlerProps) =>
     socket.on(ModelEvents.MODEL_ERROR, handleModelError);
     socket.on(SuggestionEvents.ACCEPT_SUGGESTION_SUCCESS, handleSuggestionSuccess);
     socket.on(SuggestionEvents.ACCEPT_SUGGESTION_ERROR, handleSuggestionError);
+    socket.on(SuggestionEvents.FIND_SUGGESTIONS_SUCCESS, handleSuggestionSuccess);
+    socket.on(SuggestionEvents.FIND_SUGGESTIONS_ERROR, handleSuggestionError);
 
     return () => {
       socket.off(ModelEvents.MODEL_STATUS);
       socket.off(ModelEvents.MODEL_ERROR);
       socket.off(SuggestionEvents.ACCEPT_SUGGESTION_SUCCESS);
       socket.off(SuggestionEvents.ACCEPT_SUGGESTION_ERROR);
+      socket.off(SuggestionEvents.FIND_SUGGESTIONS_SUCCESS);
+      socket.off(SuggestionEvents.FIND_SUGGESTIONS_ERROR);
     };
   }, [extractorId]);
 };
