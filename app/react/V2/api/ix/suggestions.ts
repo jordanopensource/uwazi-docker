@@ -60,14 +60,21 @@ const findSelectedSuggestions = async (extractorId: string, suggestionIds: strin
 
   /**** FAKE IMPLEMENTATION ****/
   //@ts-ignore
-  const callbacks = socket._callbacks.$FIND_SUGGESTIONS_SUCCESS;
-  if (callbacks.length) {
+  const callbacks = socket._callbacks.$ix_model_status;
+  if (callbacks?.length) {
     setTimeout(() => {
-      callbacks[0]({
-        extractorId,
-        suggestionIds,
+      callbacks[0](extractorId, 'processing_suggestions', '', {
+        processed: Math.floor(suggestionIds.length / 2),
+        total: suggestionIds.length,
       });
     }, 3000);
+
+    setTimeout(() => {
+      callbacks[0](extractorId, 'ready', '', {
+        processed: suggestionIds.length,
+        total: suggestionIds.length,
+      });
+    }, 8000);
   }
 
   return Promise.resolve({ success: true, data: [] });

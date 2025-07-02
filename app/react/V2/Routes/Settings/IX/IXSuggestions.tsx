@@ -120,7 +120,25 @@ const IXSuggestions = () => {
         suggestionsToFind.map(s => s._id)
       );
       await revalidate();
+      if (status.status === ixStatus.ready) {
+        setStatus({
+          status: ixStatus.processing_suggestions,
+          message: ixmessages[ixStatus.processing_suggestions],
+          data: { processed: 0, total: suggestionsToFind.length },
+        });
+      }
+      if (status.status === ixStatus.processing_suggestions) {
+        setStatus({
+          status: ixStatus.processing_suggestions,
+          message: ixmessages[ixStatus.processing_suggestions],
+          data: {
+            processed: status.data?.processed || 0,
+            total: (status.data?.total || 0) + suggestionsToFind.length,
+          },
+        });
+      }
     } catch (error) {
+      console.log(error);
       setNotifications({
         type: 'error',
         text: <Translate>An error occurred</Translate>,
@@ -286,6 +304,10 @@ const IXSuggestions = () => {
                 size="small"
                 type="button"
                 styling="outline"
+                disabled={
+                  status.status === ixStatus.sending_labeled_data ||
+                  status.status === ixStatus.processing_model
+                }
                 onClick={async () => {
                   await findSuggestions(selected);
                 }}
