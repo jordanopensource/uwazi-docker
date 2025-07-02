@@ -138,7 +138,6 @@ const IXSuggestions = () => {
         });
       }
     } catch (error) {
-      console.log(error);
       setNotifications({
         type: 'error',
         text: <Translate>An error occurred</Translate>,
