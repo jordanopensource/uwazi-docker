@@ -57,6 +57,7 @@ const IXSuggestions = () => {
     aggregation,
     currentStatus,
     totalPages,
+    total,
     activeFilters,
   } = useLoaderData() as IXSuggestionsLoaderResponse;
   const prevSuggestions = useRef(suggestions);
@@ -163,6 +164,13 @@ const IXSuggestions = () => {
         await revalidate();
         setAcceptedSuggestionsAtom(new Set());
       }
+    } catch (error) {}
+  };
+
+  const testRun = async () => {
+    try {
+      setStatus({ status: ixStatus.sending_labeled_data });
+      await suggestionsAPI.testRun(extractor._id!);
     } catch (error) {}
   };
 
@@ -277,7 +285,7 @@ const IXSuggestions = () => {
                 <PaginationState
                   page={Number(searchParams.get('page') || 1)}
                   size={SUGGESTIONS_PER_PAGE}
-                  total={aggregation.total || totalPages * SUGGESTIONS_PER_PAGE}
+                  total={total}
                   currentLength={currentSuggestions.length}
                 />
                 <div>
@@ -355,6 +363,11 @@ const IXSuggestions = () => {
                   <Translate>Cancel</Translate>
                 )}
               </Button>
+              {status.status === ixStatus.ready && (
+                <Button size="small" type="button" styling="light" onClick={testRun}>
+                  <Translate>Test run</Translate>
+                </Button>
+              )}
               {status.status !== ixStatus.ready ? (
                 <div className="text-sm font-semibold text-center text-gray-900">
                   <Translate>{ixmessages[status.status]}</Translate>
@@ -404,6 +417,7 @@ const IXSuggestionsLoader =
     const suggestionsList: {
       suggestions: EntitySuggestion[];
       totalPages: number;
+      total: number;
     } = await suggestionsAPI.get(
       {
         filter,
@@ -437,6 +451,7 @@ const IXSuggestionsLoader =
       aggregation,
       currentStatus: currentStatus.status,
       activeFilters,
+      total: suggestionsList.total,
     };
   };
 
