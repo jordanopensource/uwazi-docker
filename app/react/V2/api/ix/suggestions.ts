@@ -4,7 +4,6 @@ import { RequestParams } from 'app/utils/RequestParams';
 import { IXSuggestionsQuery } from 'shared/types/suggestionType';
 import { ObjectIdSchema } from 'shared/types/commonTypes';
 import { SuggestionValue } from 'app/V2/Routes/Settings/IX/types';
-import { SuggestionEvents } from 'app/V2/Routes/Settings/IX/events';
 import { socket } from 'app/socket';
 
 const get = async (
@@ -103,4 +102,13 @@ const testRun = async (extractorId: string, headers?: IncomingHttpHeaders): Prom
   }
 };
 
-export { get, accept, aggregation, findSuggestions, status, cancel, testRun, findSelectedSuggestions };
+export {
+  get,
+  accept,
+  aggregation,
+  findSuggestions,
+  status,
+  cancel,
+  testRun,
+  findSelectedSuggestions,
+};
