@@ -21,6 +21,7 @@ import { notificationAtom } from 'V2/atoms';
 import { Translate } from 'app/I18N';
 import { ClientPropertySchema } from 'app/istore';
 import { FunnelIcon } from '@heroicons/react/24/solid';
+import { FeatureToggle } from 'V2/Components/UI/FeatureToggle';
 import { SuggestionsTitle } from './components/SuggestionsTitle';
 import { FiltersSidepanel } from './components/FiltersSidepanel';
 import { suggestionsTableColumnsBuilder } from './components/TableElements';
@@ -105,6 +106,39 @@ const IXSuggestions = () => {
         type: 'info',
         text: <Translate>Suggestions sent</Translate>,
       });
+    } catch (error) {
+      setNotifications({
+        type: 'error',
+        text: <Translate>An error occurred</Translate>,
+        details: error.json?.prettyMessage ? error.json.prettyMessage : undefined,
+      });
+    }
+  };
+
+  const findSuggestions = async (suggestionsToFind: TableSuggestion[]) => {
+    try {
+      await suggestionsAPI.findSelectedSuggestions(
+        extractor._id!,
+        suggestionsToFind.map(s => s._id)
+      );
+      await revalidate();
+      if (status.status === ixStatus.ready) {
+        setStatus({
+          status: ixStatus.processing_suggestions,
+          message: ixmessages[ixStatus.processing_suggestions],
+          data: { processed: 0, total: suggestionsToFind.length },
+        });
+      }
+      if (status.status === ixStatus.processing_suggestions) {
+        setStatus({
+          status: ixStatus.processing_suggestions,
+          message: ixmessages[ixStatus.processing_suggestions],
+          data: {
+            processed: status.data?.processed || 0,
+            total: (status.data?.total || 0) + suggestionsToFind.length,
+          },
+        });
+      }
     } catch (error) {
       setNotifications({
         type: 'error',
@@ -271,9 +305,25 @@ const IXSuggestions = () => {
           />
         </SettingsContent.Body>
 
-        <SettingsContent.Footer className={`flex gap-2 ${selected.length ? 'bg-gray-200' : ''}`}>
+        <SettingsContent.Footer className="flex gap-2" highlighted={selected.length > 0}>
           {selected.length ? (
             <div className="flex items-center justify-center space-x-4">
+              <FeatureToggle feature="devProcessSelected">
+                <Button
+                  size="small"
+                  type="button"
+                  styling="outline"
+                  disabled={
+                    status.status === ixStatus.sending_labeled_data ||
+                    status.status === ixStatus.processing_model
+                  }
+                  onClick={async () => {
+                    await findSuggestions(selected);
+                  }}
+                >
+                  <Translate>Find suggestions</Translate>
+                </Button>
+              </FeatureToggle>
               <Button
                 size="small"
                 type="button"
