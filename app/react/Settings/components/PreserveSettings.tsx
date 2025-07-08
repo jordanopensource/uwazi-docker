@@ -39,10 +39,10 @@ const PreserveSettingsComp = ({ settings, user }: mappedProps) => {
   }, []);
 
   return (
-    <div className="settings-content">
-      <div className="panel panel-preserve panel-default">
+    <div className="p-4 h-full w-full">
+      <div className="h-full w-full">
         <SettingsHeader>
-          <div className="panel-preserve-heading">
+          <div className="flex items-center gap-2">
             <PreserveIcon color="#D20D6C" /> <Translate>Preserve Extension</Translate>
           </div>
         </SettingsHeader>
@@ -98,7 +98,7 @@ const PreserveSettingsComp = ({ settings, user }: mappedProps) => {
                 </div>
                 {token && (
                   <button
-                    className="btn btn-success"
+                    className="text-sm px-5 py-2.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:bg-primary-700"
                     type="button"
                     onClick={async () => {
                       await navigator.clipboard.writeText(token);
@@ -108,7 +108,10 @@ const PreserveSettingsComp = ({ settings, user }: mappedProps) => {
                   </button>
                 )}
                 {!token && (
-                  <button type="submit" className="btn btn-success">
+                  <button
+                    type="submit"
+                    className="text-sm px-5 py-2.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:bg-primary-700"
+                  >
                     <Translate>Request token</Translate>
                   </button>
                 )}

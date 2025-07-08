@@ -12,6 +12,7 @@ type I18NLinkProps = {
   mainContext: { confirm: Function };
   activeclassname: string;
   replaceNavigationHistory: boolean;
+  className: string;
 };
 
 const I18NLink = (props: I18NLinkProps) => {
@@ -80,6 +81,7 @@ const I18NLink = (props: I18NLinkProps) => {
     'confirmMessage',
     'to',
     'activeclassname',
+    'className',
   ]);
 
   return (
@@ -87,7 +89,9 @@ const I18NLink = (props: I18NLinkProps) => {
       end
       to={props.to}
       onClick={onClickHandler}
-      className={({ isActive }) => (isActive ? props.activeclassname : undefined)}
+      className={({ isActive }) =>
+        isActive ? `${props.activeclassname} ${props.className}` : props.className
+      }
       {...newProps}
     />
   );

@@ -104,11 +104,7 @@ const Templates = () => {
   };
 
   return (
-    <div
-      className="tw-content"
-      style={{ width: '100%', overflowY: 'auto' }}
-      data-testid="settings-templates"
-    >
+    <div className="w-full h-full overflow-y-auto" data-testid="settings-templates">
       <SettingsContent>
         <SettingsContent.Header title="Templates" />
         <SettingsContent.Body>

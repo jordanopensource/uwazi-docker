@@ -1,6 +1,12 @@
 import uniqueID from 'shared/uniqueID';
+import dotenv from 'dotenv';
 import { Tenant } from './tenants/tenantContext';
 import { version } from '../../package.json';
+
+dotenv.config();
+
+console.log(process.env);
+console.log(process.env.FEATURE_FLAG_PARAGRAPH_EXTRACTION === 'true');
 
 const {
   ACTIVITY_LOGS_FOLDER,

@@ -86,11 +86,7 @@ const PagesList = () => {
   };
 
   return (
-    <div
-      className="tw-content"
-      style={{ width: '100%', overflowY: 'auto' }}
-      data-testid="settings-pages"
-    >
+    <div className="w-full h-full overflow-y-auto" data-testid="settings-pages">
       <SettingsContent>
         <SettingsContent.Header title="Pages" />
         <SettingsContent.Body>
