@@ -86,7 +86,6 @@ const I18NLink = (props: I18NLinkProps) => {
 
   return (
     <NavLink
-      end
       to={props.to}
       onClick={onClickHandler}
       className={({ isActive }) =>
