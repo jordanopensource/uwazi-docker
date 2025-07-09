@@ -23,7 +23,7 @@ const Settings = () => {
         <title>{t('System', 'Settings', null, false)}</title>
       </Helmet>
       <div
-        className={`min-w-[250px] border-r border-gray-200 bg-gray-50 h-full ${isSettingsParentRoute ? 'w-full' : 'hidden'} md:block`}
+        className={`md:min-w-[250px] border-r border-gray-200 bg-gray-50 h-full ${isSettingsParentRoute ? 'w-full' : 'invisible w-0 min-w-0'} md:visible`}
       >
         <SettingsNavigation />
       </div>

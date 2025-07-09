@@ -41,21 +41,22 @@ const Preserve = () => {
             }
           >
             <div className="flex flex-col gap-4">
-              <div className="text-gray-800">
-                <Translate>You have not connected an Uwazi instance, yet</Translate>
-              </div>
-              <a
-                href="https://uwazi.io/page/9852italrtk/support"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-700 font-semibold underline hover:text-primary-800 mt-2"
-              >
-                <Translate>INSTALL the browser extension</Translate>
-              </a>
               <div>
+                <span>1. </span>
+                <a
+                  href="https://uwazi.io/page/9852italrtk/support"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-700 font-semibold hover:text-primary-800 mt-2 inline"
+                >
+                  <Translate>Install the browser extension.</Translate>
+                </a>
+              </div>
+              <div>
+                <span>2. </span>
                 <Translate translationKey="Preserve Setup Description">
-                  If you know your Uwazi URL and TOKEN click the link below, and fill the required
-                  information.
+                  Request and copy the Extension Token bellow and paste it into the preserve
+                  extension settings.
                 </Translate>
               </div>
             </div>
