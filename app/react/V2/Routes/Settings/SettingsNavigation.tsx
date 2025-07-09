@@ -48,7 +48,9 @@ const SettingsNavigation = () => {
       </section>
       <section className="p-4 border-t border-gray-200">
         <NeedAuthorization roles={['admin', 'editor']}>
-          <h2 className="font-bold text-sm text-gray-500 mb-2 tracking-wider">Metadata</h2>
+          <h2 className="font-bold text-sm text-gray-500 mb-2 tracking-wider">
+            <Translate>Metadata</Translate>
+          </h2>
         </NeedAuthorization>
         <ul className="flex flex-col gap-4">
           <NeedAuthorization roles={['admin']}>
@@ -84,7 +86,9 @@ const SettingsNavigation = () => {
         </ul>
       </section>
       <section className="p-4 border-t border-gray-200">
-        <h2 className="font-bold text-sm text-gray-500 mb-4 tracking-wider">Tools</h2>
+        <h2 className="font-bold text-sm text-gray-500 mb-4 tracking-wider">
+          <Translate>Tools</Translate>
+        </h2>
         <ul className="flex flex-col gap-4">
           <NeedAuthorization roles={['admin']}>
             <>
