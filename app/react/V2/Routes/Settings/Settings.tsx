@@ -7,7 +7,6 @@ import { SettingsNavigation } from './SettingsNavigation';
 const Settings = () => {
   const outlet = useOutlet();
   const isSettingsParentRoute = useMemo(() => outlet === null, [outlet]);
-  console.log(isSettingsParentRoute);
   return (
     <div
       className="tw-content"
