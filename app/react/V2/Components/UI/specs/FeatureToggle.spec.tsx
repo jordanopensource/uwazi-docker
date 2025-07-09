@@ -1,7 +1,7 @@
-/* eslint-disable max-statements */
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable max-statements */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { Provider, useSetAtom } from 'jotai';

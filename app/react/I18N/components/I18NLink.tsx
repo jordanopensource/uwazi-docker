@@ -89,7 +89,9 @@ const I18NLink = (props: I18NLinkProps) => {
       to={props.to}
       onClick={onClickHandler}
       className={({ isActive }) =>
-        isActive ? `${props.activeclassname} ${props.className}` : props.className
+        props.activeclassname && isActive
+          ? `${props.activeclassname} ${props.className}`
+          : props.className
       }
       {...newProps}
     />
