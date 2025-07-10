@@ -250,11 +250,11 @@ describe('aggregation routes', () => {
         .expect(200);
 
       expect(response.body).toEqual({
-        total: 14,
-        labeled: 4,
+        total: 18,
+        labeled: 8,
         nonLabeled: 10,
         match: 4,
-        mismatch: 4,
+        mismatch: 8,
         obsolete: 4,
         error: 2,
       });
