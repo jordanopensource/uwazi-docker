@@ -53,7 +53,7 @@ const stateUpdateCases: {
     state: {
       withValue: true,
       withSuggestion: false,
-      labeled: false,
+      labeled: true,
       match: false,
       obsolete: false,
       processing: false,
@@ -187,7 +187,7 @@ const stateUpdateCases: {
   },
   {
     state: {
-      labeled: false,
+      labeled: true,
       withValue: true,
       withSuggestion: true,
       match: true,
@@ -203,7 +203,7 @@ const stateUpdateCases: {
   },
   {
     state: {
-      labeled: false,
+      labeled: true,
       withValue: true,
       withSuggestion: true,
       match: true,
@@ -221,7 +221,7 @@ const stateUpdateCases: {
   },
   {
     state: {
-      labeled: false,
+      labeled: true,
       withValue: true,
       withSuggestion: true,
       match: false,
@@ -482,6 +482,7 @@ describe('suggestions', () => {
         const labelMismatchedSuggestions = suggestions.filter(
           (sug: any) => sug.state.labeled && !sug.state.match
         );
+
         const ids = new Set(labelMismatchedSuggestions.map((sug: any) => sug._id.toString()));
         await Suggestions.accept(
           labelMismatchedSuggestions.map((sug: any) => ({
@@ -494,19 +495,16 @@ describe('suggestions', () => {
           extractorId: factory.id('super_powers_extractor'),
         });
         const changedSuggestions = newSuggestions.filter((sug: any) => ids.has(sug._id.toString()));
-
         expect(changedSuggestions).toMatchObject([
           {
-            _id: labelMismatchedSuggestions[0]._id,
-            state: matchState(),
-            suggestedValue: labelMismatchedSuggestions[0].suggestedValue,
-            labeledValue: labelMismatchedSuggestions[0].suggestedValue,
+            language: 'es',
+            sharedId: 'shared2',
+            currentValue: 'scientific knowledge es',
           },
           {
-            _id: labelMismatchedSuggestions[1]._id,
-            state: matchState(),
-            suggestedValue: labelMismatchedSuggestions[1].suggestedValue,
-            labeledValue: labelMismatchedSuggestions[1].suggestedValue,
+            language: 'en',
+            sharedId: 'shared3',
+            currentValue: 'puts up with Bruce Wayne',
           },
         ]);
       });
