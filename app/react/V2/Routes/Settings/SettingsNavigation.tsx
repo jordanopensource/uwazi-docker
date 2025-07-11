@@ -1,5 +1,5 @@
 import React from 'react';
-import { I18NLink, Translate } from 'app/I18N';
+import { I18NLinkV2 as I18NLink, Translate } from 'app/I18N';
 import { NeedAuthorization } from 'V2/Components/UI/NeedAuthorization';
 import { Icon } from 'app/UI';
 import { PreserveIcon } from 'app/Layout/PreserveIcon';
@@ -14,7 +14,7 @@ const SettingsNavigation = () => {
   const renderLink = (to: string, children: React.ReactNode) => (
     <I18NLink
       to={to}
-      activeclassname="bg-primary-100 text-primary-800 focus:bg-primary-100"
+      activeClassname="bg-primary-100 text-primary-800 focus:bg-primary-100"
       className="block p-2 rounded hover:bg-gray-100 focus:bg-gray-100 font-medium text-sm"
     >
       <span className="whitespace-nowrap flex items-center gap-1">{children}</span>

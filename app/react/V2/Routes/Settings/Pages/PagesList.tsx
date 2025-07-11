@@ -4,7 +4,7 @@ import { LoaderFunction, useLoaderData, useRevalidator } from 'react-router';
 import { createColumnHelper } from '@tanstack/react-table';
 import { IncomingHttpHeaders } from 'http';
 import { useSetAtom } from 'jotai';
-import { I18NLink, Translate } from 'app/I18N';
+import { I18NLinkV2 as I18NLink, Translate } from 'app/I18N';
 import * as pagesAPI from 'V2/api/pages';
 import { Button, ConfirmationModal, Table } from 'app/V2/Components/UI';
 import { SettingsContent } from 'app/V2/Components/Layouts/SettingsContent';
