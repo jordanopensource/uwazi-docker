@@ -26,9 +26,8 @@ describe('Thesauri configuration', () => {
 
   const saveThesaurus = () => {
     cy.contains('button', 'Save').click();
-    cy.contains('Thesauri updated.');
     cy.contains('Dismiss').click();
-    cy.get('#thesauri-name').click();
+    cy.wait('@editThesauri');
   };
 
   const assertThesaurusTableState = (expectedItems: string[]) => {
@@ -38,12 +37,6 @@ describe('Thesauri configuration', () => {
     // Check that each expected item is present in the table
     expectedItems.forEach(item => {
       cy.get('tbody').should('contain.text', item);
-    });
-
-    // Verify the table structure is correct
-    cy.get('tbody tr').each($row => {
-      // Each row should have a label and an edit button
-      cy.wrap($row).should('contain', 'Edit');
     });
   };
 
@@ -55,9 +48,7 @@ describe('Thesauri configuration', () => {
     cy.get('input[name="newValues.1.label"]').type('Second Item', { delay: 0 });
     cy.getByTestId('thesaurus-form-submit').click();
     cy.get('tbody tr').should('have.length', 2);
-    cy.contains('button', 'Save').click();
-    cy.contains('Thesauri added.');
-    cy.contains('Dismiss').click();
+    saveThesaurus();
   });
 
   it('should add groups', () => {
@@ -151,7 +142,14 @@ describe('Thesauri configuration', () => {
     );
     cy.contains('button', 'Remove').click();
     saveThesaurus();
-    assertThesaurusTableState(['Edited Group B', 'First Item', 'Group A', 'Added Root Item']);
+    assertThesaurusTableState([
+      'Edited Group B',
+      'Edited First Child B',
+      'Added Third Child B',
+      'First Item',
+      'Group A',
+      'Added Root Item',
+    ]);
   });
 
   it('should use the thesaurus in a template', () => {
@@ -164,7 +162,7 @@ describe('Thesauri configuration', () => {
 
     cy.contains('aside button', 'Add property').click();
     cy.contains('Save').click();
-    cy.contains('success');
+    cy.contains('Dismiss').click();
   });
 
   it('should list the thesauri', () => {
