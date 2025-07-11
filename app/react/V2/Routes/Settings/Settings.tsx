@@ -26,9 +26,7 @@ const Settings = () => {
       >
         <SettingsNavigation />
       </div>
-      <div data-testid="settings-content" className="flex-1 overflow-auto h-full">
-        {outlet}
-      </div>
+      <div className="flex-1 overflow-auto h-full">{outlet}</div>
     </div>
   );
 };
