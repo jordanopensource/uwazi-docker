@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable max-statements */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -45,12 +46,29 @@ describe('LookupMultiSelect (React Testing Library)', () => {
   });
 
   it('should lookup and render multiselect with new found options when searchTerm is not empty', async () => {
-    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
-    const searchInput = screen.getByRole('textbox');
-    await userEvent.type(searchInput, 'test');
-    // Wait for debounce and async
+    const lookup = jest.fn(async term =>
+      term === ''
+        ? {
+            options: Array.from({ length: 6 }, (_, i) => ({
+              label: `Option${i + 1}`,
+              value: `option${i + 1}`,
+            })),
+            count: 6,
+          }
+        : {
+            options: [{ label: 'Test Option', value: 'test-option' }],
+            count: 1,
+          }
+    );
+    render(<LookupMultiSelect lookup={lookup} />);
+    // Wait for the search bar to appear
     await waitFor(() => {
-      expect(lookupSpy).toHaveBeenCalledWith('test');
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
+    // Type in the search bar
+    await userEvent.type(screen.getByRole('textbox'), 'test');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Test Option')).toBeInTheDocument();
     });
   });
 
@@ -88,9 +106,22 @@ describe('LookupMultiSelect (React Testing Library)', () => {
     await waitFor(() => expect(lookup2).toHaveBeenCalledWith(''));
   });
 
-  it('should render a search bar input', () => {
-    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  it('should render a search bar input when there are more than 5 options', async () => {
+    const lookup = jest.fn(async term =>
+      term === ''
+        ? {
+            options: Array.from({ length: 6 }, (_, i) => ({
+              label: `Option${i + 1}`,
+              value: `option${i + 1}`,
+            })),
+            count: 6,
+          }
+        : { options: [], count: 0 }
+    );
+    render(<LookupMultiSelect lookup={lookup} />);
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
   });
 
   it('should deduplicate options from combineOptions', async () => {
@@ -223,5 +254,82 @@ describe('LookupMultiSelect (React Testing Library)', () => {
       />
     );
     expect(screen.getByText(/No options found/)).toBeInTheDocument();
+  });
+
+  it('should use lookup on mount, show options, show search bar if more than 5 options, show no options for wrong search, and restore options on clearing search', async () => {
+    const initialOptions = Array.from({ length: 6 }, (_, i) => ({
+      label: `Option${i + 1}`,
+      value: `option${i + 1}`,
+    }));
+    const lookup = jest.fn(async term =>
+      term === '' ? { options: initialOptions, count: 6 } : { options: [], count: 0 }
+    );
+    render(<LookupMultiSelect lookup={lookup} />);
+
+    // Wait for the lookup to be called and options to be rendered
+    await waitFor(() => {
+      expect(lookup).toHaveBeenCalledWith('');
+    });
+
+    // Wait for options and search bar
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      expect(screen.getByLabelText('Option1')).toBeInTheDocument();
+    });
+
+    // Check if there's a "show more" button that needs to be clicked
+    const showMoreButton = screen.queryByRole('button', { name: /x more/ });
+    if (showMoreButton) {
+      await userEvent.click(showMoreButton);
+    }
+
+    // Now check for Option6
+    await waitFor(() => {
+      expect(screen.getByLabelText('Option6')).toBeInTheDocument();
+    });
+
+    // Type a search that returns no options
+    await userEvent.type(screen.getByRole('textbox'), 'noresults');
+    await waitFor(() => {
+      expect(screen.getByText('No options found')).toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
+    // Clear the search bar
+    await userEvent.clear(screen.getByRole('textbox'));
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+      expect(screen.getByLabelText('Option1')).toBeInTheDocument();
+      expect(screen.getByLabelText('Option6')).toBeInTheDocument();
+    });
+  });
+
+  it('should not render a search bar if lookup returns 5 or fewer options', async () => {
+    const initialOptions = Array.from({ length: 5 }, (_, i) => ({
+      label: `Option${i + 1}`,
+      value: `option${i + 1}`,
+    }));
+    const lookup = jest.fn(async (searchTerm: string) => {
+      if (searchTerm === '') {
+        return { options: initialOptions, count: 5 };
+      }
+      return { options: [], count: 0 };
+    });
+    render(
+      <LookupMultiSelect
+        options={[]}
+        onChange={jest.fn()}
+        lookup={lookup}
+        optionsLabel="label"
+        optionsValue="value"
+        totalPossibleOptions={5}
+      />
+    );
+    await waitFor(() => {
+      expect(lookup).toHaveBeenCalledWith('');
+      expect(screen.getByLabelText('Option1')).toBeInTheDocument();
+      expect(screen.getByLabelText('Option5')).toBeInTheDocument();
+    });
+    // The search bar should NOT be present
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 });
