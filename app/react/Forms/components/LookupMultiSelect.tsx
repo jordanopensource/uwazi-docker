@@ -91,6 +91,7 @@ export class LookupMultiSelect extends Component<LookupMultiSelectProps, LookupM
     return (
       <MultiSelect
         {...rest}
+        showSearch={Boolean(this.props.lookup)}
         onChange={this.onChange}
         onFilter={this.onFilter}
         totalPossibleOptions={filteredTotalPossibleOptions}

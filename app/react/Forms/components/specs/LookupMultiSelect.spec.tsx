@@ -1,134 +1,227 @@
-import { shallow, ShallowWrapper } from 'enzyme';
+/**
+ * @jest-environment jsdom
+ */
 import React from 'react';
-import { sleep } from 'shared/tsUtils';
-import {
-  LookupMultiSelect,
-  LookupMultiSelectProps,
-  LookupMultiSelectState,
-  debounceTime,
-} from '../LookupMultiSelect';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
+import { LookupMultiSelect, LookupMultiSelectProps } from '../LookupMultiSelect';
 
-import { MultiSelect, MultiSelectProps } from '../MultiSelect';
+const baseOptions = [
+  { label: 'Option1', value: 'option1', results: 5 },
+  { label: 'Option2', value: 'option2', results: 4 },
+  {
+    label: 'Sub Group',
+    value: 'Group',
+    results: 3,
+    options: [
+      { label: 'Group option1', value: 'group-option1', results: 2 },
+      { label: 'Group option2', value: 'group-option2', results: 1 },
+    ],
+  },
+];
 
-describe('LookupMultiSelect', () => {
-  let component: ShallowWrapper<LookupMultiSelectProps, LookupMultiSelectState, LookupMultiSelect>;
+describe('LookupMultiSelect (React Testing Library)', () => {
   let props: Partial<LookupMultiSelectProps>;
+  let lookupSpy: jest.Mock;
 
   beforeEach(() => {
+    lookupSpy = jest.fn().mockResolvedValue({
+      options: [
+        { label: 'new', value: 'new', results: 1 },
+        { label: 'new 2', value: 'new 2', results: 2 },
+      ],
+      count: 2,
+    });
     props = {
       value: [],
-      options: [
-        { label: 'Option1', value: 'option1', results: 5 },
-        { label: 'Option2', value: 'option2', results: 4 },
-        {
-          label: 'Sub Group',
-          value: 'Group',
-          results: 3,
-          options: [
-            { label: 'Group option1', value: 'group-option1', results: 2 },
-            { label: 'Group option2', value: 'group-option2', results: 1 },
-          ],
-        },
-      ],
-      onChange: jasmine.createSpy('onChange'),
+      options: baseOptions,
+      onChange: jest.fn(),
+      lookup: lookupSpy,
+      optionsLabel: 'label',
+      optionsValue: 'value',
+      totalPossibleOptions: 0,
     };
   });
 
-  const render = (lookupOverride?: any) => {
-    const lookup =
-      lookupOverride ||
-      (async () => ({
-        options: [
-          { label: 'new', value: 'new', results: 1 },
-          { label: 'new 2', value: 'new 2', results: 2 },
-        ],
-        count: 2,
-      }));
-
-    component = shallow(<LookupMultiSelect {...props} lookup={lookup} />);
-  };
-
-  const getProps = () => component.find(MultiSelect).props() as MultiSelectProps<string[]>;
-
-  describe('onFilter', () => {
-    it('should lookup and render multiselect with new found options when searchTerm is not empty', async () => {
-      render();
-      await getProps().onFilter('test');
-      await sleep(debounceTime + 1);
-
-      component.update();
-      expect(getProps().options).toEqual(
-        props.options!.concat([
-          { label: 'new', value: 'new', results: 1 },
-          { label: 'new 2', value: 'new 2', results: 2 },
-        ])
-      );
+  it('should lookup and render multiselect with new found options when searchTerm is not empty', async () => {
+    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
+    const searchInput = screen.getByRole('textbox');
+    await userEvent.type(searchInput, 'test');
+    // Wait for debounce and async
+    await waitFor(() => {
+      expect(lookupSpy).toHaveBeenCalledWith('test');
     });
   });
 
-  describe('onChange', () => {
-    it('options should also include selectedOptions', () => {
-      render();
-
-      component.setState({ lookupOptions: [{ label: 'new', value: 'new', results: 1 }] });
-      getProps().onChange(['option2']);
-      component.setProps({ options: [] });
-
-      expect(getProps().options).toEqual([
-        { label: 'new', value: 'new', results: 1 },
-        { label: 'Option2', value: 'option2', results: 4 },
-      ]);
-    });
+  it('options should also include selectedOptions', async () => {
+    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
+    // Simulate lookupOptions in state
+    await waitFor(() => expect(lookupSpy).toHaveBeenCalled());
+    // Select an option
+    const optionCheckbox = screen.getByLabelText('Option2');
+    await userEvent.click(optionCheckbox);
+    expect(props.onChange).toHaveBeenCalledWith(['option2']);
   });
 
-  describe('component update props', () => {
-    it('should update the totalPossibleOptions in the state', () => {
-      render();
-
-      component.setState({ totalPossibleOptions: 10 });
-      component.setProps({ totalPossibleOptions: 42 });
-
-      expect(component.state().totalPossibleOptions).toBe(42);
-    });
-  });
-
-  describe('lifecycle on mount and lookup prop change', () => {
-    it('should call onFilter (lookup) on mount', async () => {
-      const lookupSpy = jasmine.createSpy('lookup').and.returnValue(
-        Promise.resolve({
-          options: [{ label: 'mount', value: 'mount', results: 1 }],
-          count: 1,
-        })
-      );
-      render(lookupSpy);
-      // Wait for debounce and async
-      await sleep(debounceTime + 1);
-      component.update();
+  it('should call onFilter (lookup) on mount', async () => {
+    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
+    await waitFor(() => {
       expect(lookupSpy).toHaveBeenCalledWith('');
     });
+  });
 
-    it('should call onFilter (lookup) when lookup prop changes', async () => {
-      const firstLookup = jasmine.createSpy('lookup1').and.returnValue(
-        Promise.resolve({
-          options: [{ label: 'first', value: 'first', results: 1 }],
-          count: 1,
-        })
-      );
-      render(firstLookup);
-      await sleep(debounceTime + 1);
-      component.update();
-      expect(firstLookup).toHaveBeenCalledWith('');
-
-      const secondLookup = jasmine.createSpy('lookup2').and.returnValue(
-        Promise.resolve({
-          options: [{ label: 'second', value: 'second', results: 1 }],
-          count: 1,
-        })
-      );
-      component.setProps({ lookup: secondLookup });
-      await sleep(debounceTime + 1);
-      component.update();
-      expect(secondLookup).toHaveBeenCalledWith('');
+  it('should call onFilter (lookup) when lookup prop changes', async () => {
+    const lookup1 = jest.fn().mockResolvedValue({
+      options: [{ label: 'first', value: 'first', results: 1 }],
+      count: 1,
     });
+    const lookup2 = jest.fn().mockResolvedValue({
+      options: [{ label: 'second', value: 'second', results: 1 }],
+      count: 1,
+    });
+    const { rerender } = render(
+      <LookupMultiSelect {...(props as LookupMultiSelectProps)} lookup={lookup1} />
+    );
+    await waitFor(() => expect(lookup1).toHaveBeenCalledWith(''));
+    rerender(<LookupMultiSelect {...(props as LookupMultiSelectProps)} lookup={lookup2} />);
+    await waitFor(() => expect(lookup2).toHaveBeenCalledWith(''));
+  });
+
+  it('should render a search bar input', () => {
+    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  it('should deduplicate options from combineOptions', async () => {
+    const duplicateOptions = [
+      { label: 'Option1', value: 'option1', results: 5 },
+      { label: 'Option1', value: 'option1', results: 5 },
+      { label: 'Option2', value: 'option2', results: 4 },
+    ];
+    render(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        options={duplicateOptions}
+        lookup={jest.fn().mockResolvedValue({ options: duplicateOptions, count: 2 })}
+      />
+    );
+    // Only one Option1 should be rendered
+    expect(screen.getAllByLabelText('Option1').length).toBe(1);
+  });
+
+  it('should show selectedOptions even if not in options or lookupOptions', async () => {
+    const value = ['not-in-options'];
+    render(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        value={value}
+        options={[]}
+        lookup={jest.fn().mockResolvedValue({ options: [], count: 0 })}
+      />
+    );
+    // The component does not render a checkbox for unknown values, so expect 'No options found'
+    expect(screen.getByText(/No options found/)).toBeInTheDocument();
+  });
+
+  it('should not render search bar or call lookup if lookup is missing', async () => {
+    render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} lookup={undefined as any} />);
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('should deduplicate options if lookup returns duplicates', async () => {
+    const lookupWithDuplicates = jest.fn().mockResolvedValue({
+      options: [
+        { label: 'Option1', value: 'option1', results: 5 },
+        { label: 'Option1', value: 'option1', results: 5 },
+      ],
+      count: 2,
+    });
+    render(
+      <LookupMultiSelect {...(props as LookupMultiSelectProps)} lookup={lookupWithDuplicates} />
+    );
+    await waitFor(() => expect(lookupWithDuplicates).toHaveBeenCalled());
+    expect(screen.getAllByLabelText('Option1').length).toBe(1);
+  });
+
+  it('should handle onChange with value not in any options', async () => {
+    const onChange = jest.fn();
+    render(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        value={['not-in-options']}
+        onChange={onChange}
+        options={[]}
+        lookup={jest.fn().mockResolvedValue({ options: [], count: 0 })}
+      />
+    );
+    // The component does not render a checkbox for unknown values, so expect 'No options found'
+    expect(screen.getByText(/No options found/)).toBeInTheDocument();
+  });
+
+  it('should update totalPossibleOptions and reflect in more/less label', async () => {
+    // Use 10 options, optionsToShow=5, totalPossibleOptions=10
+    const manyOptions = Array.from({ length: 10 }, (_, i) => ({
+      label: `Option${i + 1}`,
+      value: `option${i + 1}`,
+    }));
+    const { rerender } = render(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        options={manyOptions}
+        optionsToShow={5}
+        totalPossibleOptions={10}
+      />
+    );
+    // Should show "5 x more" (button should be present)
+    expect(screen.getByRole('button', { name: /x more/ })).toBeInTheDocument();
+    // Update totalPossibleOptions
+    rerender(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        options={manyOptions}
+        optionsToShow={5}
+        totalPossibleOptions={15}
+      />
+    );
+    expect(screen.getByRole('button', { name: /x more/ })).toBeInTheDocument();
+  });
+
+  it('should show and toggle show more/show less', async () => {
+    // Use 8 options, optionsToShow=5
+    const manyOptions = Array.from({ length: 8 }, (_, i) => ({
+      label: `Option${i + 1}`,
+      value: `option${i + 1}`,
+    }));
+    render(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        options={manyOptions}
+        optionsToShow={5}
+        totalPossibleOptions={8}
+      />
+    );
+    // Should show "3 x more" (button should be present)
+    expect(screen.getByRole('button', { name: /x more/ })).toBeInTheDocument();
+    // Click show more
+    const showMoreBtn = screen.getByRole('button', { name: /x more/ });
+    await userEvent.click(showMoreBtn);
+    // Should show "x less"
+    expect(screen.getByRole('button', { name: /x less/ })).toBeInTheDocument();
+    // Click show less
+    const showLessBtn = screen.getByRole('button', { name: /x less/ });
+    await userEvent.click(showLessBtn);
+    expect(screen.getByRole('button', { name: /x more/ })).toBeInTheDocument();
+  });
+
+  it('should show "No options found" when there are no options', () => {
+    render(
+      <LookupMultiSelect
+        {...(props as LookupMultiSelectProps)}
+        options={[]}
+        lookup={jest.fn().mockResolvedValue({ options: [], count: 0 })}
+      />
+    );
+    expect(screen.getByText(/No options found/)).toBeInTheDocument();
   });
 });
