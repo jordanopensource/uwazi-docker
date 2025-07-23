@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import React from 'react';
 import { render } from '@testing-library/react';
 import { Provider as JotaiProvider, createStore } from 'jotai';
@@ -20,20 +23,20 @@ describe('Icon (Jotai)', () => {
     // Arabic is RTL
     const { container } = renderWithLocale(<Icon icon="angle-left" />, 'ar');
     const svg = container.querySelector('svg');
-    expect(svg).toHaveAttribute('data-fa-flip', 'horizontal');
+    expect(svg).toHaveClass('fa-flip-horizontal');
   });
 
   it('should not flip icon for LTR languages', () => {
     // Spanish is LTR
     const { container } = renderWithLocale(<Icon icon="angle-left" />, 'es');
     const svg = container.querySelector('svg');
-    expect(svg).not.toHaveAttribute('data-fa-flip');
+    expect(svg).not.toHaveAttribute('flip');
   });
 
   it('should use locale prop if provided', () => {
     // Hebrew is RTL
     const { container } = renderWithLocale(<Icon icon="angle-left" locale="he" />, 'en');
     const svg = container.querySelector('svg');
-    expect(svg).toHaveAttribute('data-fa-flip', 'horizontal');
+    expect(svg).toHaveClass('fa-flip-horizontal');
   });
 });

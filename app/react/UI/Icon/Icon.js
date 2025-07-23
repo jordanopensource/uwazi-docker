@@ -12,9 +12,9 @@ const Icon = ({ locale: propLocale = '', ...ownProps }) => {
   const atomLocale = useAtomValue(localeAtom);
   const locale = propLocale || atomLocale;
   const languageData = availableLanguages.find(l => l.key === locale);
-  return (
-    <FontAwesomeIcon {...ownProps} flip={languageData && languageData.rtl ? 'horizontal' : null} />
-  );
+  const flip = languageData && languageData.rtl ? 'horizontal' : null;
+
+  return <FontAwesomeIcon {...ownProps} flip={flip} />;
 };
 
 Icon.propTypes = {
