@@ -3,54 +3,16 @@
  */
 /* eslint-disable max-statements */
 import React from 'react';
-<<<<<<< HEAD
-import { render, screen, waitFor } from '@testing-library/react';
-=======
 import { act, render, screen, waitFor } from '@testing-library/react';
->>>>>>> restore-changes
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { LookupMultiSelect, LookupMultiSelectProps } from '../LookupMultiSelect';
 
-<<<<<<< HEAD
-const baseOptions = [
-  { label: 'Option1', value: 'option1', results: 5 },
-  { label: 'Option2', value: 'option2', results: 4 },
-  {
-    label: 'Sub Group',
-    value: 'Group',
-    results: 3,
-    options: [
-      { label: 'Group option1', value: 'group-option1', results: 2 },
-      { label: 'Group option2', value: 'group-option2', results: 1 },
-    ],
-  },
-];
-
-=======
->>>>>>> restore-changes
 describe('LookupMultiSelect (React Testing Library)', () => {
   let props: Partial<LookupMultiSelectProps>;
   let lookupSpy: jest.Mock;
 
   beforeEach(() => {
-<<<<<<< HEAD
-    lookupSpy = jest.fn().mockResolvedValue({
-      options: [
-        { label: 'new', value: 'new', results: 1 },
-        { label: 'new 2', value: 'new 2', results: 2 },
-      ],
-      count: 2,
-    });
-    props = {
-      value: [],
-      options: baseOptions,
-      onChange: jest.fn(),
-      lookup: lookupSpy,
-      optionsLabel: 'label',
-      optionsValue: 'value',
-      totalPossibleOptions: 0,
-=======
     lookupSpy = jest.fn(async term => {
       if (!term) {
         // Return 8 options when not filtering
@@ -77,7 +39,6 @@ describe('LookupMultiSelect (React Testing Library)', () => {
       options: [{ label: 'Selected', value: 'selected', results: 1 }],
       onChange: jest.fn(),
       lookup: lookupSpy,
->>>>>>> restore-changes
     };
   });
 
