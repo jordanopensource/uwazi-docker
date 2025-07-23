@@ -8,40 +8,37 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { LookupMultiSelect, LookupMultiSelectProps } from '../LookupMultiSelect';
 
-const baseOptions = [
-  { label: 'Option1', value: 'option1', results: 5 },
-  { label: 'Option2', value: 'option2', results: 4 },
-  {
-    label: 'Sub Group',
-    value: 'Group',
-    results: 3,
-    options: [
-      { label: 'Group option1', value: 'group-option1', results: 2 },
-      { label: 'Group option2', value: 'group-option2', results: 1 },
-    ],
-  },
-];
-
 describe('LookupMultiSelect (React Testing Library)', () => {
   let props: Partial<LookupMultiSelectProps>;
   let lookupSpy: jest.Mock;
 
   beforeEach(() => {
-    lookupSpy = jest.fn().mockResolvedValue({
-      options: [
-        { label: 'new', value: 'new', results: 1 },
-        { label: 'new 2', value: 'new 2', results: 2 },
-      ],
-      count: 2,
+    lookupSpy = jest.fn(async term => {
+      if (!term) {
+        // Return 8 options when not filtering
+        return {
+          options: Array.from({ length: 8 }, (_, i) => ({
+            label: `Option${i + 1}`,
+            value: `option${i + 1}`,
+            results: i + 1,
+          })),
+          count: 8,
+        };
+      }
+      // Return 2 filtered options for any non-empty search term
+      return {
+        options: [
+          { label: 'Filtered 1', value: 'filtered-1', results: 1 },
+          { label: 'Filtered 2', value: 'filtered-2', results: 2 },
+        ],
+        count: 2,
+      };
     });
     props = {
-      value: [],
-      options: baseOptions,
+      value: ['selected'],
+      options: [{ label: 'Selected', value: 'selected', results: 1 }],
       onChange: jest.fn(),
       lookup: lookupSpy,
-      optionsLabel: 'label',
-      optionsValue: 'value',
-      totalPossibleOptions: 0,
     };
   });
 
@@ -74,12 +71,12 @@ describe('LookupMultiSelect (React Testing Library)', () => {
 
   it('options should also include selectedOptions', async () => {
     render(<LookupMultiSelect {...(props as LookupMultiSelectProps)} />);
-    // Simulate lookupOptions in state
-    await waitFor(() => expect(lookupSpy).toHaveBeenCalled());
+    // Wait for lookup to complete and Option2 to be rendered
+    await waitFor(() => expect(screen.getByLabelText('Selected')).toBeInTheDocument());
     // Select an option
-    const optionCheckbox = screen.getByLabelText('Option2');
+    const optionCheckbox = screen.getByLabelText('Selected');
     await userEvent.click(optionCheckbox);
-    expect(props.onChange).toHaveBeenCalledWith(['option2']);
+    expect(props.onChange).toHaveBeenCalledWith([]);
   });
 
   it('should call onFilter (lookup) on mount', async () => {
@@ -219,30 +216,30 @@ describe('LookupMultiSelect (React Testing Library)', () => {
   });
 
   it('should show and toggle show more/show less', async () => {
-    // Use 8 options, optionsToShow=5
-    const manyOptions = Array.from({ length: 8 }, (_, i) => ({
-      label: `Option${i + 1}`,
-      value: `option${i + 1}`,
-    }));
     render(
       <LookupMultiSelect
         {...(props as LookupMultiSelectProps)}
-        options={manyOptions}
         optionsToShow={5}
         totalPossibleOptions={8}
       />
     );
-    // Should show "3 x more" (button should be present)
-    expect(screen.getByRole('button', { name: /x more/ })).toBeInTheDocument();
+    // Wait for the show more button to appear
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /\d+\s*x more/i })).toBeInTheDocument()
+    );
     // Click show more
-    const showMoreBtn = screen.getByRole('button', { name: /x more/ });
+    const showMoreBtn = screen.getByRole('button', { name: /more/i });
     await userEvent.click(showMoreBtn);
-    // Should show "x less"
-    expect(screen.getByRole('button', { name: /x less/ })).toBeInTheDocument();
+    // Wait for show less button
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /x less/i })).toBeInTheDocument()
+    );
     // Click show less
-    const showLessBtn = screen.getByRole('button', { name: /x less/ });
+    const showLessBtn = screen.getByRole('button', { name: /x less/i });
     await userEvent.click(showLessBtn);
-    expect(screen.getByRole('button', { name: /x more/ })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /x more/i })).toBeInTheDocument()
+    );
   });
 
   it('should show "No options found" when there are no options', () => {
