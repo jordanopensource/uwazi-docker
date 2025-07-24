@@ -45,10 +45,7 @@ export class LookupMultiSelect extends Component<LookupMultiSelectProps, LookupM
 
   async componentDidMount() {
     if (this.props.lookup) {
-      console.log(this.props.lookup);
-      console.log(this.props.model);
       const { options, count } = await this.props.lookup('');
-      console.log(options, count);
       const combinedOptions = [...this.props.options, ...options].filter(
         uniqueOptions(this.props.optionsValue)
       );
