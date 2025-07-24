@@ -274,6 +274,10 @@ class InformationExtraction {
     serviceUrl: string,
     type = 'labeled_data'
   ) => {
+    if (files.length === 0) {
+      throw new Error('No files with segmentations to be used for training');
+    }
+
     await Promise.all(
       files.map(async file => {
         const xmlName = file.segmentation.xmlname!;
@@ -645,7 +649,22 @@ class InformationExtraction {
         return;
       }
 
-      await this.sendMaterialsForPDF(files, extractor);
+      try {
+        await this.sendMaterialsForPDF(files, extractor);
+      } catch (error) {
+        if (error.message === 'No files with segmentations to be used for training') {
+          await this.stopModel(extractorId);
+          emitToTenant(
+            tenants.current().name,
+            'ix_model_status',
+            extractorId,
+            'ready',
+            'No files with segmentations to be used for training'
+          );
+          return;
+        }
+        throw error;
+      }
     }
 
     if (extractor.source.property) {
