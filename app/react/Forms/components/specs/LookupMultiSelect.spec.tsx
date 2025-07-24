@@ -86,7 +86,7 @@ describe('LookupMultiSelect (React Testing Library)', () => {
     });
   });
 
-  it('should favor preloaded options over lookup options', async () => {
+  it('should favor preloaded options over lookup options since lookup options dont have children in some scenarios', async () => {
     const preloadedOptions = [
       {
         label: 'Parent',
