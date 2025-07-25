@@ -29,6 +29,8 @@ const CodeEditorComponent = ({
           language,
           tabSize: 2,
           automaticLayout: true,
+          fontFamily: 'Consolas, "Courier New", monospace',
+          fontLigatures: false,
         });
 
         editor.current.changeViewZones(accessor => {
@@ -60,7 +62,7 @@ const CodeEditorComponent = ({
     return fallbackElement || <div />;
   }
 
-  return <div className="w-full h-full border" dir="ltr" ref={container} />;
+  return <div className="w-full h-full border !font-mono" dir="ltr" ref={container} />;
 };
 
 export type { CodeEditorProps, CodeEditorInstance };
