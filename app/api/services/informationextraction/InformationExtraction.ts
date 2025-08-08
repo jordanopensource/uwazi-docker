@@ -602,7 +602,7 @@ class InformationExtraction {
     // Default behavior for training/test runs: count suggestions since creationDate
     const processedSuggestions = await IXSuggestionsModel.count({
       extractorId,
-      date: { $gt: model.creationDate },
+      $and: [{ date: { $ne: null } }, { date: { $gt: model.creationDate } }],
     });
     return {
       total: model.totalSuggestionsToFind,
