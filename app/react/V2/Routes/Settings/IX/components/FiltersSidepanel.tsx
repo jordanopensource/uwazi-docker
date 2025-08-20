@@ -160,8 +160,9 @@ const FiltersSidepanel = ({
           </Card>
 
           <Card>
-            <div className="text-sm font-semibold text-gray-700 mb-2">
-              <Translate>Processed</Translate>
+            <div className="text-sm text-gray-700 mb-2">
+              <Translate className="font-semibold">Processed</Translate> (
+              <Translate>Accuracy</Translate> {aggregation.accuracy}%)
             </div>
             <div className="flex items-center space-x-1">
               <Checkbox
