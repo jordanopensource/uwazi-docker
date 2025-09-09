@@ -133,7 +133,7 @@
     "bcryptjs": "^3.0.2",
     "big.js": "^7.0.1",
     "body-parser": "^1.20.3",
-    "bootstrap": "3.4.1",
+    "bootstrap": "5.0.0",
     "child-process-promise": "^2.2.1",
     "clean-insights-sdk": "^2.6.2",
     "compression": "^1.8.0",
