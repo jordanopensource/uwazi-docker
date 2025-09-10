@@ -1,0 +1,185 @@
+#!/bin/bash
+set -e
+
+# Set default paths for database initialization if not already set via environment variables
+DB_INITIALIZATION_PATH="${DB_INITIALIZATION_PATH:-"/uwazi/database/blank_state/uwazi_development"}"
+DB_INITIALIZATION_PATH_DEMO="/uwazi/uwazi-fixtures/dump/uwazi_development"
+
+# Ensure MONGO_URI is provided
+if [ -z "$MONGO_URI" ]; then
+  echo "Error: MONGO_URI is not set. Please provide the MongoDB connection URI."
+  exit 1
+fi
+
+# Check if the DATABASE_NAME environment variable is set
+if [ -z "$DATABASE_NAME" ]; then
+    echo "Error: DATABASE_NAME is not set. Please provide the MongoDB database name."
+    exit 1
+fi
+
+# Extract the host part of the URI
+MONGO_HOST=$(echo "$MONGO_URI" | sed -E 's|^[^/]+//([^@/]+@)?([^/]+).*|\2|')
+
+# Set default index name if not provided
+INDEX_NAME="${INDEX_NAME:-$DATABASE_NAME}"
+
+# Display key environment settings for debugging purposes
+echo "Uwazi Version: ($UWAZI_GIT_RELEASE_REF) ($NODE_ENV)"
+echo "MongoDB Host: $MONGO_HOST"
+echo "Database Name: $DATABASE_NAME"
+echo "Redis Host: $(echo $REDIS_HOST | sed -E 's/^[^@]+@([^/]+).*/\1/')"
+echo "Elasticsearch Host: $ELASTICSEARCH_URL"
+echo "Elasticsearch Index: $INDEX_NAME"
+echo "Demo Run: ${IS_FIRST_DEMO_RUN:-false}"
+export FILES_ROOT_PATH=/uwazi/
+
+# Function to check if MongoDB is ready and accessible
+wait_for_mongo() {
+  echo "Waiting for MongoDB to be ready..."
+  local retries=10
+  until mongosh "$MONGO_URI" --eval "db.adminCommand('ping')" &>/dev/null; do
+    if [ $retries -le 0 ]; then
+      echo "MongoDB is not ready after multiple attempts. Exiting."
+      exit 1
+    fi
+    echo "MongoDB is not ready yet. Retrying in 5 seconds... ($retries retries left)"
+    retries=$((retries - 1))
+    sleep 5
+  done
+  echo "MongoDB is ready."
+}
+
+# Function to check if Elasticsearch is ready and accessible
+wait_for_elasticsearch() {
+  echo "Waiting for Elasticsearch to be ready..."
+  local retries=10
+  local es_url="${ELASTICSEARCH_URL:-http://elasticsearch:9200}"
+  local curl_opts="-s"
+  
+  # Add API key if provided
+  if [ -n "$ELASTICSEARCH_API_KEY" ]; then
+    curl_opts="$curl_opts -H 'Authorization: ApiKey $ELASTICSEARCH_API_KEY'"
+  fi
+  
+  until eval "curl $curl_opts '$es_url/_cluster/health'" &>/dev/null; do
+    if [ $retries -le 0 ]; then
+      echo "Elasticsearch is not ready after multiple attempts. Exiting."
+      exit 1
+    fi
+    echo "Elasticsearch is not ready yet. Retrying in 5 seconds... ($retries retries left)"
+    retries=$((retries - 1))
+    sleep 5
+  done
+  echo "Elasticsearch is ready."
+}
+
+wait_for_redis() {
+  echo "Waiting for Redis to be ready..."
+  local retries=10
+  local redis_host="${REDIS_HOST:-redis}"
+  local redis_port="${REDIS_PORT:-6379}"
+  
+  until redis-cli -h "$redis_host" -p "$redis_port" ping &>/dev/null; do
+    if [ $retries -le 0 ]; then
+      echo "Redis is not ready after multiple attempts. Exiting."
+      exit 1
+    fi
+    echo "Redis is not ready yet. Retrying in 5 seconds... ($retries retries left)"
+    retries=$((retries - 1))
+    sleep 5
+  done
+  echo "Redis is ready."
+}
+
+# Check if the default collections exist in the database
+db_exists() {
+  local collections=(
+    'connections'
+    'translationsV2'
+    'translations'
+    'activitylogs'
+    'settings'
+    'users'
+    'templates'
+    'relationtypes'
+    'updatelogs'
+    'migrations'
+    'migrationHubRecords'
+    'files'
+    'relationshipMigrationFields'
+    'entities'
+    'sessions'
+    'relationships'
+    'dictionaries'
+    'pages'
+    'usergroups'
+    'ocr_records'
+    'px_entities_status'
+    'px_extractors'
+    'segmentations'
+  )
+
+  # Get the list of existing collections in the database
+  local existing_collections
+  existing_collections=$(mongosh "$MONGO_URI" --eval "db.getMongo().getDB('$DATABASE_NAME').getCollectionNames()" --quiet)
+
+  # Check if all required collections are present
+  for collection in "${collections[@]}"; do
+    if [[ "$existing_collections" != *"$collection"* ]]; then
+      return 1  # Missing a collection
+    fi
+  done
+
+  return 0  # All collections exist
+}
+
+# Function to recreate the database
+recreate_database() {
+    echo "Dropping database '$DATABASE_NAME'..."
+    mongosh "$MONGO_URI" --eval "db.dropDatabase()" || { echo "Failed to drop database '$DATABASE_NAME'"; exit 1; }
+
+    echo "Restoring database from dump..."
+    mongorestore --uri "$MONGO_URI" /uwazi/blank_state/uwazi_development/ || { echo "Failed to restore database"; exit 1; }
+
+    echo "Running migrations..."
+    INDEX_NAME=$INDEX_NAME DATABASE_NAME=$DATABASE_NAME yarn migrate || { echo "Failed to run migrations"; exit 1; }
+
+    echo "Reindexing..."
+    INDEX_NAME=$INDEX_NAME DATABASE_NAME=$DATABASE_NAME yarn reindex || { echo "Failed to reindex"; exit 1; }
+
+    echo "Database recreation complete."
+}
+
+# Wait for services to be ready before proceeding
+wait_for_mongo
+wait_for_elasticsearch
+wait_for_redis
+
+# Ensure the 'uploaded_documents' directory exists for storing document uploads
+mkdir -p ./uploaded_documents
+
+# Conditional initialization
+if db_exists; then
+  echo "Database '$DATABASE_NAME' is fully initialized with default collections. Skipping setup."
+else
+  echo "Database '$DATABASE_NAME' is not fully initialized. Proceeding with setup..."
+  if [ "$IS_FIRST_DEMO_RUN" = "true" ]; then
+    echo "Setting up demo database..."
+    rm -rf ./uploaded_documents/*  # Clean uploaded_documents directory
+    cp -r ./uwazi-fixtures/uploaded_documents/* ./uploaded_documents/
+    mongorestore --uri "$MONGO_URI" "$DB_INITIALIZATION_PATH_DEMO" --db="$DATABASE_NAME"
+  else
+    echo "Initializing blank database state..."
+    recreate_database
+  fi
+  echo "Initial database setup complete."
+fi
+
+# Run migrations and reindex
+echo "Running migrations and reindexing..."
+NODE_ENV=production DATABASE_NAME="$DATABASE_NAME" INDEX_NAME="$INDEX_NAME" FILES_ROOT_PATH="$FILES_ROOT_PATH" yarn migrate-and-reindex
+echo "Migrations and reindexing complete."
+
+# Start the Uwazi server in production mode
+echo "Starting Uwazi server..."
+DATABASE_NAME=${DATABASE_NAME} INDEX_NAME=$INDEX_NAME NODE_ENV=production FILES_ROOT_PATH=$FILES_ROOT_PATH yarn run-production
