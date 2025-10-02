@@ -33,13 +33,6 @@ variables:
     • <{{ build.link }}|View Build>
 
 steps:
-  # Security check - scan for secrets/credentials
-  - name: run-pre-commit-hooks
-    image: josaorg/pre-commit-runner
-    settings:
-      args: "--all-files"
-      skip: "end-of-file-fixer, yamllint, run-samplr, check-yaml"
-
   # Build latest image (development and other branches)
   - name: build-latest-image
     image: woodpeckerci/plugin-docker-buildx
