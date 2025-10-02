@@ -57,9 +57,6 @@ steps:
         CI_PREV_PIPELINE_URL: "${CI_PREV_PIPELINE_URL}"
         CI_PIPELINE_NUMBER: "${CI_PIPELINE_NUMBER}"
 
-    depends_on:
-      - run-pre-commit-hooks
-
   # Slack notification for latest build success
   - name: notify-slack-latest-success
     image: plugins/slack
@@ -71,7 +68,6 @@ steps:
     when:
       - status: success
     depends_on:
-      - run-pre-commit-hooks
       - build-latest-image
 
   # Slack notification for latest build failure
@@ -85,5 +81,4 @@ steps:
     when:
       - status: failure
     depends_on:
-      - run-pre-commit-hooks
       - build-latest-image
