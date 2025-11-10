@@ -76,8 +76,14 @@ wait_for_elasticsearch() {
 wait_for_redis() {
   echo "Waiting for Redis to be ready..."
   local retries=10
-  local redis_host="${REDIS_HOST:-redis}"
+  local redis_host_full="${REDIS_HOST:-redis}"
   local redis_port="${REDIS_PORT:-6379}"
+  
+  # Extract the host part from REDIS_HOST
+  local redis_host="$redis_host_full"
+  if [[ "$redis_host_full" == *"@"* ]]; then
+    redis_host="${redis_host_full#*@}"
+  fi
   
   until redis-cli -h "$redis_host" -p "$redis_port" ping &>/dev/null; do
     if [ $retries -le 0 ]; then
