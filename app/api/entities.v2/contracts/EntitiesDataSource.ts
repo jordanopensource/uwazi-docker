@@ -1,4 +1,4 @@
-import { ResultSet } from 'api/common.v2/contracts/ResultSet';
+import { ResultSet } from 'api/core/application/contracts/ResultSet';
 import { Entity, EntityMetadata, MetadataValue } from '../model/Entity';
 
 type MarkAsChangedCriteria = { template: string } | { sharedId: string };
@@ -28,4 +28,5 @@ export interface EntitiesDataSource {
     title: string,
     propertiesToNewValues: { propertyName: string; value?: any }[]
   ): Promise<void>;
+  anyExistsForTemplate(templateId: string): Promise<boolean>;
 }

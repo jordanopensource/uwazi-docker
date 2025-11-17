@@ -1,13 +1,13 @@
 import { Buffer } from 'buffer';
-import multer from 'multer';
 import express from 'express';
 import { Server } from 'http';
+import multer from 'multer';
 
 import { HttpClientFactory } from 'api/common.v2/infrastructure/HttpClientFactory';
-import { FileBuilder } from 'api/files.v2/model/specs/utils/FileBuilder';
 import { PXExtractionKey } from 'api/paragraphExtraction/domain/PXExtractionKey';
 import { GetParagraphsResultOutput } from 'api/paragraphExtraction/domain/PXExtractionService';
 
+import { FileContents } from 'api/files.v2/model/FileContents';
 import { PXExternalExtractionService } from '../ExternalExtractionService/ExternalExtractionService';
 import { document, mockGetParagraphsResult, segmentation } from './fixtures';
 
@@ -63,15 +63,28 @@ describe('ExternalExtractionService', () => {
         entityStatusId: 'any_extraction_id',
       });
 
+      async function* streamCallback() {
+        yield Buffer.from('default content');
+      }
+
       await externalExtractionService.extractParagraphs({
         segmentations: [segmentation],
         documents: [document],
         mainLanguage: 'pt',
         extractionKey,
         files: [
-          FileBuilder.create().withFilename('file1.txt').build(),
-          FileBuilder.create().withFilename('file2.txt').build(),
-          FileBuilder.create().withFilename('file3.txt').build(),
+          {
+            filename: 'file1.txt',
+            contents: new FileContents(streamCallback),
+          },
+          {
+            filename: 'file2.txt',
+            contents: new FileContents(streamCallback),
+          },
+          {
+            filename: 'file3.txt',
+            contents: new FileContents(streamCallback),
+          },
         ],
       });
 

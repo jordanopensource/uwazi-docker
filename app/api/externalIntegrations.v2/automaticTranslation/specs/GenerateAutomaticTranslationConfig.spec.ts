@@ -1,8 +1,8 @@
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import { getFixturesFactory } from 'api/utils/fixturesFactory';
-import { getConnection } from 'api/common.v2/database/getConnectionForCurrentTenant';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
-import { MongoTemplatesDataSource } from 'api/templates.v2/database/MongoTemplatesDataSource';
+import { getConnection } from 'api/core/infrastructure/mongodb/common/getConnectionForCurrentTenant';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
+import { MongoTemplatesDataSource } from 'api/core/infrastructure/mongodb/template/MongoTemplatesDataSource';
 import { GenerateAutomaticTranslationsCofig } from '../GenerateAutomaticTranslationConfig';
 import { MongoATConfigDataSource } from '../infrastructure/MongoATConfigDataSource';
 import { GenerateATConfigError } from '../errors/generateATErrors';
@@ -80,11 +80,11 @@ describe('GenerateAutomaticTranslationConfig', () => {
 
   beforeEach(() => {
     automaticTranslationConfigDS = AutomaticTranslationFactory.defaultATConfigDataSource(
-      DefaultTransactionManager()
+      TransactionManagerFactory.default()
     );
     generateAutomaticTranslationConfig = new GenerateAutomaticTranslationsCofig(
       automaticTranslationConfigDS,
-      new MongoTemplatesDataSource(getConnection(), DefaultTransactionManager()),
+      new MongoTemplatesDataSource(getConnection(), TransactionManagerFactory.default()),
       new Validator<SemanticConfig>(semanticConfigSchema)
     );
   });

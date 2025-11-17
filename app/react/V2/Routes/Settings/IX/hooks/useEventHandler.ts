@@ -29,18 +29,39 @@ const useEventHandler = ({ extractorId, updateStatus }: useEventHandlerProps) =>
     const handleModelStatus: IXModelStatusCallback = async (
       eventExtractorId,
       modelStatus,
-      _message,
+      message,
       data
     ) => {
-      if (eventExtractorId === extractorId) {
-        if (data?.processed === data?.total) {
-          updateStatus(ixStatus.ready);
-        } else {
-          updateStatus(modelStatus, data);
-        }
-        await revalidate();
-        setAcceptedSuggestionsAtom(new Set());
+      if (eventExtractorId !== extractorId) return;
+
+      const isCompleted = message === 'Completed';
+
+      const autoAcceptCount = Boolean(
+        ixStatus.processing_auto_accept && data?.total && data?.processed
+      );
+
+      if (modelStatus === ixStatus.processing_model) {
+        updateStatus(ixStatus.processing_model);
+      } else if (modelStatus === ixStatus.processing_suggestions) {
+        updateStatus(ixStatus.processing_suggestions, {
+          processed: Number(data?.processed),
+          total: Number(data?.total),
+        });
+      } else if (autoAcceptCount) {
+        updateStatus(ixStatus.processing_auto_accept, {
+          processed: Number(data?.processed),
+          total: Number(data?.total),
+        });
+      } else if (modelStatus === ixStatus.processing_auto_accept) {
+        updateStatus(ixStatus.processing_auto_accept);
+      } else if (isCompleted) {
+        updateStatus(ixStatus.ready);
+      } else {
+        updateStatus(ixStatus.ready);
       }
+
+      setAcceptedSuggestionsAtom(new Set());
+      await revalidate();
     };
 
     const handleModelError: IXErrorTrainingModelCallback = ({ message }) => {
@@ -80,7 +101,7 @@ const useEventHandler = ({ extractorId, updateStatus }: useEventHandlerProps) =>
       socket.off(SuggestionEvents.ACCEPT_SUGGESTION_SUCCESS);
       socket.off(SuggestionEvents.ACCEPT_SUGGESTION_ERROR);
     };
-  }, [extractorId]);
+  }, [extractorId, revalidate, setAcceptedSuggestionsAtom, setNotifications, updateStatus]);
 };
 
 export { useEventHandler };

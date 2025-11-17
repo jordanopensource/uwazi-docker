@@ -10,12 +10,9 @@ A source template must,A source template must
 A target template needs to have the following properties,A target template needs to have the following properties
 A valid email is required,L'email est obligatoire
 Accept,Accepter
-Accept suggestion,Accept suggestion
-Accept suggestions,Accept suggestions
 Accepted suggestion on entity,Accepted suggestion on entity
 Account,Compte
 Account locked,Account locked
-Account locked. Check your email to unlock.,Account locked. Check your email to unlock.
 Account unlocked successfully,Account unlocked successfully
 Account updated,Account updated
 Accuracy,Accuracy
@@ -55,6 +52,7 @@ Add thesaurus value,Add thesaurus value
 Add timelink,Add timelink
 Add to all languages,Ajouter à toutes les langues
 Add to table of contents,Ajouter à la table des matières
+Add to training set,Add to training set
 Add user,Ajouter un utilisateur
 add value,add value
 Add/delete users and assign roles,Ajouter / Supprimer des utilisateurs et attribuer des rôles
@@ -77,8 +75,10 @@ All of the paragraphs will be deleted,All of the paragraphs will be deleted
 All of the previously created paragraphs will be deleted and recreated after the process.,All of the previously created paragraphs will be deleted and recreated after the process.
 Allow captcha bypass,Allow captcha bypass
 Already exists,Already exists
+Amount,Amount
 An error has occured while deleting a language:,An error has occured while deleting a language:
 An error has occured while installing languages:,An error has occured while installing languages:
+An error has occurred,An error has occurred
 An error has occurred during data export,An error has occurred during data export
 An error occurred,An error occurred
 Analytics,Analytics
@@ -97,6 +97,7 @@ Attachment renamed,Attachment renamed
 Attachment uploaded,Attachment uploaded
 Attachments,Pièces Jointes
 Authentication code,Code d'authentification
+Auto-accept suggestions,Auto-accept suggestions
 auto-created,créé automatiquement
 Automatic Table of Contents,Table des matières automatique
 Automatically generated,Généré automatiquement
@@ -129,6 +130,7 @@ You will need to update them manually. After selecting this option, you will not
 Character support process warning,"This process could take several minutes and will likely change URLs to library filters. If you have menus or links using such URLs, they will probably stop working after the update. You will need to update them manually."
 Character support revert warning,"After selecting this option, you will not be able to revert back to using legacy property naming. If you are not facing issues with your template property names, we recommend leaving this unchecked."
 Check to make this instance public (non-logged in users can see public documents and entities),Check to make this instance public (non-logged in users can see public documents and entities)
+Choose which data to use for training,Choose which data to use for training
 Clear,Clear
 Clear all,Clear all
 Clear All,Clear All
@@ -224,7 +226,6 @@ DELETE,Effacer
 Delete entities and documents,Delete entities and documents
 Delete file,Supprimer le fichier
 Delete language,Supprimer la langue
-Delete Property,Supprimer la propriété
 Deleted attachment,Deleted attachment
 Deleted custom file,Deleted custom file
 Deleted entity,Deleted entity
@@ -266,7 +267,6 @@ Drag row,Drag row
 Drop your files here to upload or,Déposez vos fichiers ici pour les télécharger ou
 Duplicate values not allowed.,Duplicate values not allowed.
 Duplicated email,Courriel en double
-Duplicated label,Étiquette dupliquée
 Duplicated name,Nom dupliqué
 Duplicated username,Nom d'utilisateur en double
 Edit,Éditer
@@ -301,8 +301,6 @@ Entity types,Types d'entités
 Entity updated,Entity updated
 Error,Erreur
 Error adding thesauri.,Error adding thesauri.
-Error creating relationship type.,Error creating relationship type.
-Error creating thesaurus.,Error creating thesaurus.
 Error deleting template(s),Error deleting template(s)
 Error loading your image,Error loading your image
 Error saving template.,Error saving template.
@@ -342,14 +340,21 @@ Filters OR operator,OU
 Filters saved,Filters saved
 Find,Trouver
 Find suggestions,Trouver des suggestions
+Find suggestions after training,Find suggestions after training
+Find suggestions for,Find suggestions for
+Find suggestions for selected,Find suggestions for selected
 Finding suggestions,Finding suggestions
 Fine tune,Ajuster
 Fit,Adapter
 Flag,Drapeau
 for,for
+For all entities,For all entities
+For entities with blank values,For entities with blank values
 Forgot Password?,Mot de passe oublié?
 Forms and email configuration,Configuration des formulaires et des e-mails
 From,From
+From all suggestions,From all suggestions
+From previous step,From previous step
 Full width,Full width
 General,Général
 General Information,General Information
@@ -407,6 +412,7 @@ Invalid csv: all the values for a row must be either nested or non-nested,Invali
 Invalid csv: nested value need to be under a non-nested value,Invalid csv: nested value need to be under a non-nested value
 Invalid form,Formulaire invalide
 It could also very easily break the app. Only write code here if you know exactly what you are doing.,Cela pourrait aussi très facilement casser l'application. N'écrivez du code ici que si vous savez exactement ce que vous faites.
+it has been logged with request id #,it has been logged with request id #
 Item,Item
 Items:,Articles :
 Javascript,Javascript
@@ -471,6 +477,10 @@ Mapping conflict error,"A reindex of your collection is necessary. The reason ma
 Maps,Maps
 Mark as Reviewed,Mark as Reviewed
 Markdown,Markdown
+marked and labeled,marked and labeled
+marked for training,marked for training
+Marked for training + all labeled entries,Marked for training + all labeled entries
+Marked for training only,Marked for training only
 Match,Match
 Matching,Matching
 matching,matching
@@ -588,6 +598,7 @@ Other users will be affected by this action!,Other users will be affected by thi
 Others,Others
 out of,hors de
 Page,Page
+Page not found,Page non trouvée
 Pages,Pages
 Paragrap number extraction property (numeric),Paragrap number extraction property (numeric)
 Paragraph,Paragraph
@@ -626,6 +637,9 @@ Priority sorting,Tri prioritaire
 Priority sorting description,"Properties marked as priority sorting will be used as default sorting criteria. If more than one property is marked as priority sorting the system will try to pick-up the best fit. When listing mixed template types, the system will pick-up the best combined priority sorting."
 Private entities description,Caution: the selected entities will be **private**. Only allowed users will be able to see them.
 Private instance,Instance privée
+Process,Process
+Process extractor,Process extractor
+Process selected,Process selected
 Processed,Processed
 Processing,Traitement
 Properties,Propriétés
@@ -684,6 +698,7 @@ RelationType saved,Type de relation sauvegardé
 remaining files,remaining files
 Remote Server Unreachable,Remote Server Unreachable
 Remove,Supprimer
+Remove from training set,Remove from training set
 remove icon,Supprimer l'icône
 Removed language,Removed language
 Rename,Renommer
@@ -781,6 +796,7 @@ shown of,Listé sur un total de
 Sign in,S'identifier
 Single relationships must have a hub,Single relationships must have a hub
 Size,Taille
+Skip to main content,Skip to main content
 Something went wrong,Quelque chose a mal tourné
 Sort,Trier
 Sort ascending,Sort ascending
@@ -838,7 +854,6 @@ Template(s),Template(s)
 Template(s) deleted successfully.,Template(s) deleted successfully.
 Templates,Modèles
 Templates:,Templates:
-Test run,Test run
 Text,Texte
 Text references limit warning,Text references are temporarily limited to a maximum of 300. We are currently working on a fix for this issue.
 The import process threw an error:,Le processus d'importation a généré une erreur :
@@ -900,8 +915,12 @@ Total files,Total files
 total files,total files
 "Total files from main documents, supporting files and uploads","Total files from main documents, supporting files and uploads"
 total users,total users
+Train,Train
+Train model,Train model
+Train model description,Training machine learning models may take from minutes up to a couple of hours depending on the amount of labeled data and the difficulty of the task.
 Training,Training
 Training model...,Training model...
+Training sample,Training sample
 Translate,Traduire
 Translation,Translation
 Translations,Traductions
@@ -918,6 +937,7 @@ Two-step verification,Vérification en deux étapes
 Two-step verification token required,Two-step verification token required
 Type,Type
 "Unable to save, failed response","Unable to save, failed response"
+Unauthorized,Non autorisé
 Unexpected error,Unexpected error
 Uninstall,Uninstall
 Uninstall language,Uninstall language
@@ -953,6 +973,7 @@ Uploads,Fichiers Mis en ligne
 URL,URL
 Use,Utilisez
 Use as filter,Use as filter
+Use for training,Use for training
 User,Utilisateur
 User Action,User Action
 User Role,User Role

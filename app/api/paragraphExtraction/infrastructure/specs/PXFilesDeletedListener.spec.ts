@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { FilesDeletedEvent } from 'api/files/events/FilesDeletedEvent';
-import { EventsBus } from 'api/eventsbus';
+import { EventsBus } from 'api/core/libs/eventsbus';
 import { FileType } from 'shared/types/fileType';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import { EntityStatus } from 'api/paragraphExtraction/domain/PXEntityStatusModel';
@@ -30,23 +30,27 @@ const documentPt = factory.document('document_1', {
   language: 'pt',
   entity: entity.sharedId,
   creationDate: 1,
+  status: 'ready',
 });
 
 const documentEn = factory.document('document_2', {
   language: 'en',
   entity: entity.sharedId,
   creationDate: 2,
+  status: 'ready',
 });
 
 const documentEs = factory.document('invalid_document', {
   language: 'es',
   entity: entity.sharedId,
   creationDate: 3,
+  status: 'ready',
 });
 
 const customFile = factory.custom_upload('invalid_custom_file', {
   entity: entity.sharedId,
   creationDate: 4,
+  status: 'ready',
 });
 
 const createFixtures = (): DBFixture => ({

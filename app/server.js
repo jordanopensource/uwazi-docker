@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 
-import bodyParser from 'body-parser';
 import compression from 'compression';
 import express from 'express';
 import promBundle from 'express-prom-bundle';
@@ -13,11 +12,12 @@ import path from 'path';
 import * as Sentry from '@sentry/node';
 
 import { registerEventListeners } from 'api/eventListeners';
-import { applicationEventsBus } from 'api/eventsbus';
+import { applicationEventsBus } from 'api/core/libs/eventsbus';
 import { appContextMiddleware } from 'api/utils/appContextMiddleware';
 import { requestIdMiddleware } from 'api/utils/requestIdMiddleware';
 import { Redis } from 'api/infrastructure/Redis';
 import { maskMongoPassword } from 'api/utils/maskMongoPassword';
+import { elasticClient } from 'api/search/elastic';
 import uwaziMessage from '../message';
 import apiRoutes from './api/api';
 import privateInstanceMiddleware from './api/auth/privateInstanceMiddleware';
@@ -62,23 +62,43 @@ const http = Server(app);
 
 const gracefullShutdown = () => {
   process.stdout.write('SIGINT signal received.\r\n');
-  http.close(error => {
+  http.close(async error => {
     process.stdout.write('Gracefully closing express connections\r\n');
     if (error) {
       process.stderr.write(error.toString());
       process.exit(1);
     }
 
-    Redis.disconnect()
-      .then(() => {
-        process.stdout.write('Disconnected from Redis\r\n');
-        return DB.disconnect();
-      })
-      .then(() => {
-        process.stdout.write('Disconnected from database\r\n');
-        process.stdout.write('Server closed succesfully\r\n');
-        process.exit(0);
-      });
+    const tasks = [
+      (async () => {
+        try {
+          await Redis.disconnect();
+          process.stdout.write('Disconnected from Redis\r\n');
+        } catch (e) {
+          // ignore
+        }
+      })(),
+      (async () => {
+        try {
+          await DB.disconnect();
+          process.stdout.write('Disconnected from database\r\n');
+        } catch (e) {
+          // ignore
+        }
+      })(),
+      (async () => {
+        try {
+          await elasticClient.close();
+          process.stdout.write('Disconnected from Elasticsearch\r\n');
+        } catch (e) {
+          // ignore
+        }
+      })(),
+    ];
+
+    await Promise.allSettled(tasks);
+    process.stdout.write('Server closed succesfully\r\n');
+    process.exit(0);
   });
   closeSockets();
 };
@@ -103,7 +123,6 @@ if (app.get('env') === 'production') {
 app.use(compression());
 app.use(express.static(path.resolve(__dirname, '../dist'), { maxage }));
 app.use('/public', express.static(config.publicAssets));
-app.use(/\/((?!remotepublic).)*/, bodyParser.json({ limit: '5mb' }));
 
 app.use(appContextMiddleware);
 
@@ -112,6 +131,8 @@ app.use(multitenantMiddleware);
 app.use(requestIdMiddleware);
 
 console.info('==> Connecting to', maskMongoPassword(config.DBHOST));
+
+// eslint-disable-next-line max-statements
 DB.connect(config.DBHOST, config.DBAUTH).then(async () => {
   await Redis.connect();
   await tenants.setupTenants();
@@ -168,4 +189,5 @@ DB.connect(config.DBHOST, config.DBAUTH).then(async () => {
   });
 
   process.on('SIGINT', gracefullShutdown);
+  process.on('SIGTERM', gracefullShutdown);
 });

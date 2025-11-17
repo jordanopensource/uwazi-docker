@@ -47,7 +47,7 @@ export default function () {
   const baseQuery = {
     explain: false,
     _source: {
-      include: [
+      includes: [
         'title',
         'icon',
         'processed',
@@ -217,12 +217,12 @@ export default function () {
     },
 
     select(fields) {
-      baseQuery._source.include = fields;
+      baseQuery._source.includes = fields;
       return this;
     },
 
     include(fields = []) {
-      baseQuery._source.include = baseQuery._source.include.concat(fields);
+      baseQuery._source.includes = baseQuery._source.includes.concat(fields);
       return this;
     },
 
@@ -267,7 +267,7 @@ export default function () {
       return this;
     },
 
-    sort(property, order = 'desc', sortByLabel = false) {
+    sort(property, order = 'desc', sortByLabel = false, sortField = '.sort') {
       if (!['desc', 'asc'].includes(order)) {
         throw new ValidationError([
           { path: 'query.order', message: 'order must be "asc" or "desc"' },
@@ -278,7 +278,10 @@ export default function () {
       }
       const isAMetadataProperty = property.includes('metadata');
       const sortingKey = sortByLabel ? 'label' : 'value';
-      const sortKey = isAMetadataProperty ? `${property}.${sortingKey}.sort` : `${property}.sort`;
+
+      const sortKey = isAMetadataProperty
+        ? `${property}.${sortingKey}${sortField}`
+        : `${property}${sortField}`;
 
       baseQuery.sort.push({ [sortKey]: { order, unmapped_type: 'boolean' } });
       return this;

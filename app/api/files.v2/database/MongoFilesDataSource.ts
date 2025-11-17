@@ -1,25 +1,34 @@
-import { ObjectId } from 'mongodb';
+import { Db, ObjectId } from 'mongodb';
 
 import { LanguageUtils } from 'shared/language';
 import { SegmentationType } from 'shared/types/segmentationType';
 
-import { MongoDataSource } from 'api/common.v2/database/MongoDataSource';
-import { MongoResultSet } from 'api/common.v2/database/MongoResultSet';
-import { ResultSet } from 'api/common.v2/contracts/ResultSet';
-
+import { ResultSet } from 'api/core/application/contracts/ResultSet';
+import {
+  MongoDataSource,
+  MongoDSOptions,
+} from 'api/core/infrastructure/mongodb/common/MongoDataSource';
+import { MongoResultSet } from 'api/core/infrastructure/mongodb/common/MongoResultSet';
+import { MongoTransactionManager } from 'api/core/infrastructure/mongodb/common/MongoTransactionManager';
+import { Result } from 'api/core/libs/Result';
+import { search } from 'api/search';
 import { FilesDataSource, GetDocumentsForEntityOptions } from '../contracts/FilesDataSource';
-import { UwaziFile } from '../model/UwaziFile';
-import { Segmentation } from '../model/Segmentation';
 import { Document } from '../model/Document';
-
+import { ProcessedDocument } from '../model/ProcessedDocument';
+import { Segmentation } from '../model/Segmentation';
+import { UwaziFile } from '../model/UwaziFile';
 import { FileMappers } from './FilesMappers';
-import { FileDBOType } from './schemas/filesTypes';
+import { fileDBO } from './schemas/filesTypes';
 import { SegmentationMapper } from './SegmentationMapper';
+import { ProcessingFileNotFound } from '../model/errors';
+import { BaseDocument } from '../model/BaseDocument';
+import { FileStorage } from '../contracts/FileStorage';
 
 type GetDocumentsForEntityQuery = {
   entity: string;
   type: 'document';
   language?: { $in: string[] };
+  status: 'ready';
 };
 
 export type SegmentationDBO = SegmentationType & {
@@ -27,8 +36,121 @@ export type SegmentationDBO = SegmentationType & {
   fileID: ObjectId;
 };
 
-export class MongoFilesDataSource extends MongoDataSource<FileDBOType> implements FilesDataSource {
+export class MongoFilesDataSource extends MongoDataSource<fileDBO> implements FilesDataSource {
   protected collectionName = 'files';
+
+  protected entitiesToIndex = new Set<string>();
+
+  protected fileStorage: FileStorage;
+
+  constructor(
+    db: Db,
+    transactionManager: MongoTransactionManager,
+    fileStorage: FileStorage,
+    options: MongoDSOptions = {}
+  ) {
+    super(db, transactionManager, options);
+    this.fileStorage = fileStorage;
+    transactionManager.onCommitted(async () => {
+      await search.indexEntities(
+        { sharedId: { $in: Array.from(this.entitiesToIndex) } },
+        '+fullText'
+      );
+    });
+  }
+
+  async getProcessingById(fileId: string) {
+    const processing = await this.getCollection().findOne({
+      _id: new ObjectId(fileId),
+      status: 'processing',
+    });
+    if (processing) {
+      return Result.ok(
+        FileMappers.toModel(
+          processing,
+          await this.fileStorage.getFile({ type: 'document', filename: processing.filename })
+        ) as Document
+      );
+    }
+    return Result.fail(new ProcessingFileNotFound(fileId));
+  }
+
+  async update(file: UwaziFile): Promise<void> {
+    await this.getCollection().findOneAndUpdate(
+      { _id: new ObjectId(file.id) },
+      { $set: FileMappers.toDBO(file) }
+    );
+    if (file instanceof BaseDocument) {
+      this.entitiesToIndex.add(file.entity);
+    }
+  }
+
+  async create(file: UwaziFile): Promise<void> {
+    await this.getCollection().insertOne(FileMappers.toDBO(file));
+    if (file instanceof BaseDocument) {
+      this.entitiesToIndex.add(file.entity);
+    }
+  }
+
+  async bulkCreate(files: UwaziFile[]): Promise<void> {
+    await this.getCollection().insertMany(files.map(FileMappers.toDBO));
+
+    files.forEach(async file => {
+      if (file instanceof ProcessedDocument) {
+        this.entitiesToIndex.add(file.entity);
+      }
+    });
+  }
+
+  async deleteExtractedMetadata(entityPropertyNames: string[], entitySharedIds: string[]) {
+    await this.getCollection().updateMany(
+      { entity: { $in: entitySharedIds }, extractedMetadata: { $exists: true, $ne: [] } },
+      { $pull: { extractedMetadata: { name: { $in: entityPropertyNames } } } }
+    );
+  }
+
+  async renameExtractedMetadata(
+    renamedPropertyNames: { [previousName: string]: string },
+    entitySharedIds: string[]
+  ) {
+    const branches = Object.entries(renamedPropertyNames).map(([oldVal, newVal]) => ({
+      case: { $eq: ['$$item.name', oldVal] },
+      then: newVal,
+    }));
+
+    const pipeline = [
+      {
+        $set: {
+          extractedMetadata: {
+            $map: {
+              input: '$extractedMetadata',
+              as: 'item',
+              in: {
+                $mergeObjects: [
+                  '$$item',
+                  {
+                    name: {
+                      $switch: {
+                        branches,
+                        default: '$$item.name',
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ];
+    await this.getCollection().updateMany(
+      {
+        'extractedMetadata.name': { $in: Object.keys(renamedPropertyNames) },
+        entity: { $in: entitySharedIds },
+      },
+      pipeline
+    );
+  }
 
   getSegmentations(filesId: string[]): ResultSet<Segmentation> {
     const cursor = this.getCollection<SegmentationDBO>('segmentations').find({
@@ -40,11 +162,15 @@ export class MongoFilesDataSource extends MongoDataSource<FileDBOType> implement
     return new MongoResultSet(cursor, SegmentationMapper.toDomain);
   }
 
-  getDocumentsForEntity(
+  getProcessedDocsForEntity(
     entitySharedId: string,
     options?: GetDocumentsForEntityOptions
-  ): ResultSet<Document> {
-    const query: GetDocumentsForEntityQuery = { entity: entitySharedId, type: 'document' };
+  ): ResultSet<ProcessedDocument> {
+    const query: GetDocumentsForEntityQuery = {
+      entity: entitySharedId,
+      type: 'document',
+      status: 'ready',
+    };
 
     if (options?.languages) {
       const inLanguages = options.languages.reduce((langauges, l) => {
@@ -60,16 +186,24 @@ export class MongoFilesDataSource extends MongoDataSource<FileDBOType> implement
       }
     }
 
-    return new MongoResultSet<FileDBOType, Document>(
+    return new MongoResultSet<fileDBO, ProcessedDocument>(
       this.getCollection().find(query, { projection: { fullText: 0 } }),
-      FileMappers.toDocumentModel
+      async dbo =>
+        FileMappers.toModel<ProcessedDocument>(
+          dbo,
+          await this.fileStorage.getFile({ type: dbo.type, filename: dbo.filename })
+        )
     );
   }
 
   getAll() {
-    return new MongoResultSet<FileDBOType, UwaziFile>(
+    return new MongoResultSet<fileDBO, UwaziFile>(
       this.getCollection().find({}, { projection: { fullText: 0 } }),
-      FileMappers.toModel
+      async dbo =>
+        FileMappers.toModel<ProcessedDocument>(
+          dbo,
+          await this.fileStorage.getFile({ type: dbo.type, filename: dbo.filename })
+        )
     );
   }
 

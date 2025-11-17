@@ -1,8 +1,8 @@
-import { TransactionManager } from 'api/common.v2/contracts/TransactionManager';
+import { TransactionManager } from 'api/core/application/contracts/TransactionManager';
 import { EntitiesDataSource } from 'api/entities.v2/contracts/EntitiesDataSource';
-import { SettingsDataSource } from 'api/settings.v2/contracts/SettingsDataSource';
-import { TemplatesDataSource } from 'api/templates.v2/contracts/TemplatesDataSource';
-import { RelationshipProperty } from 'api/templates.v2/model/RelationshipProperty';
+import { SettingsDataSource } from 'api/core/application/contracts/SettingsDataSource';
+import { TemplatesDataSource } from 'api/core/application/contracts/TemplatesDataSource';
+import { RelationshipProperty } from 'api/core/domain/template/RelationshipProperty';
 import { Entity } from 'api/entities.v2/model/Entity';
 import { RelationshipsDataSource } from '../contracts/RelationshipsDataSource';
 import { MatchQueryNode } from '../model/MatchQueryNode';

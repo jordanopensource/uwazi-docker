@@ -1,7 +1,7 @@
 import { Extractors } from 'api/services/informationextraction/ixextractors';
 import { IXSuggestionsQuery, SuggestionCustomFilter } from 'shared/types/suggestionType';
 import { ObjectId } from 'mongodb';
-import templates from 'api/templates';
+import templates from 'api/core/v1_layer/templates';
 import { propertyTypeIsMultiValued } from 'api/services/informationextraction/ixMaterials';
 import { getMatchStage } from '../pipelineStages';
 import { IXSuggestionsModel } from '../IXSuggestionsModel';
@@ -104,6 +104,7 @@ export class GetSuggestionsForTableQuery {
         error: 1,
         fileId: 1,
         status: 1,
+        useForTraining: { $ifNull: ['$useForTraining', false] },
       },
     });
   }

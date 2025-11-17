@@ -6,9 +6,10 @@ import ValidationError from 'ajv/dist/runtime/validation_error';
 import db from 'api/utils/testing_db';
 import { propertyTypes } from 'shared/propertyTypes';
 import { EntitySchema } from 'shared/types/entityType';
-import templates from 'api/templates';
+import templates from 'api/core/v1_layer/templates';
 import { TemplateSchema } from 'shared/types/templateType';
 import * as entitiesIndex from 'api/search/entitiesIndex';
+import { PropertyTypeEnum } from 'api/core/domain/template/PropertyType';
 import fixtures, { templateId, simpleTemplateId, nonExistentId } from './validatorFixtures';
 
 import { customErrorMessages } from '../validation/metadataValidators.js';
@@ -158,7 +159,29 @@ describe('validateEntity', () => {
               { label: 'markdown', name: 'markdown', required: true, type: 'markdown' },
               { label: 'numeric', name: 'numeric', required: true, type: 'numeric' },
             ],
-            commonProperties: [{ name: 'title', label: 'title', type: 'text' }],
+            commonProperties: [
+              {
+                _id: db.id(),
+                label: 'Title',
+                type: PropertyTypeEnum.Text,
+                name: 'title',
+                isCommonProperty: true,
+              },
+              {
+                _id: db.id(),
+                label: 'Creation Date',
+                type: PropertyTypeEnum.Date,
+                name: 'creationDate',
+                isCommonProperty: true,
+              },
+              {
+                _id: db.id(),
+                label: 'Edit Date',
+                type: PropertyTypeEnum.Date,
+                name: 'editDate',
+                isCommonProperty: true,
+              },
+            ],
           };
           const templateWithRequiredProps = await templates.save(template, 'en');
 

@@ -2,7 +2,6 @@
 /* eslint-disable max-statements */
 /* eslint-disable max-classes-per-file */
 /* eslint-disable camelcase */
-import moment from 'moment';
 import {
   ExtractedMetadataSchema,
   LanguageISO6391,
@@ -16,9 +15,8 @@ import { SegmentationModel } from 'api/services/pdfsegmentation/segmentationMode
 import { IXSuggestionsModel } from 'api/suggestions/IXSuggestionsModel';
 import ixmodels from 'api/services/informationextraction/ixmodels';
 import { FileType } from 'shared/types/fileType';
-import templatesModel from 'api/templates/templates';
+import templatesModel from 'api/core/v1_layer/templates/templates';
 import { propertyTypes } from 'shared/propertyTypes';
-import { ensure } from 'shared/tsUtils';
 import { EnforcedWithId, UwaziFilterQuery } from 'api/odm';
 import { Entity } from 'api/entities.v2/model/Entity';
 import { IXModelType } from 'shared/types/IXModelType';
@@ -29,6 +27,7 @@ import { ObjectId } from 'mongodb';
 import { Suggestions } from 'api/suggestions/suggestions';
 import { Extractors } from './ixextractors';
 import { IXServices } from './IXServices';
+import { deriveTrainingPropertyValue } from './propertyValue';
 
 const BATCH_SIZE_FOR_PDF = 50;
 const BATCH_SIZE_FOR_PROPERTY = 1000;
@@ -69,6 +68,7 @@ interface FileWithAggregation {
   extractedMetadata: ExtractedMetadataSchema[];
   propertyType: PropertyTypeSchema;
   propertyValue?: PropertyValue;
+  useForTraining?: boolean;
 }
 
 type FileEnforcedNotUndefined = {
@@ -193,16 +193,17 @@ async function getEntitiesForTraining(
 }
 
 async function getEntitiesForIdsQuery(model: EnforcedWithId<IXModelType>, BATCH_SIZE: number) {
-  if (!model.findSuggestionsSharedIds?.length) {
+  const runIds = model.processRun?.findSuggestionsSharedIds as string[] | undefined;
+  if (!runIds?.length) {
     await ixmodels.unsetFindSuggestionsData(model._id);
     return null;
   }
 
-  const sharedIdsToProcess = model.findSuggestionsSharedIds!.slice(0, BATCH_SIZE);
+  const sharedIdsToProcess = runIds.slice(0, BATCH_SIZE);
 
   await ixmodels.updateMany(
     { _id: model._id },
-    { $set: { findSuggestionsSharedIds: model.findSuggestionsSharedIds!.slice(BATCH_SIZE) } }
+    { $set: { 'processRun.findSuggestionsSharedIds': runIds.slice(BATCH_SIZE) } }
   );
 
   const entityQuery = { sharedId: { $in: sharedIdsToProcess } };
@@ -215,17 +216,24 @@ async function getEntitiesForSuggestionsQuery(
   model: EnforcedWithId<IXModelType>,
   BATCH_SIZE: number
 ) {
-  // Use balanced sampling for all suggestion finding (both test runs and regular runs)
-  const suggestions = await Suggestions.getBalancedSample(extractorId, model, BATCH_SIZE);
+  // Use process-aware sampling when filters are set; otherwise balanced sampling
+  const suggestions = await Suggestions.getSampleForProcess(extractorId, model, BATCH_SIZE);
 
   if (!suggestions.length) {
     return null;
   }
 
-  const entityQuery = {
-    sharedId: { $in: [...new Set(suggestions.map(s => s.entityId))] },
-    language: { $in: [...new Set(suggestions.map(s => s.language))] },
-  };
+  // Build an OR of exact (sharedId, language) pairs to avoid cross-product expansion
+  const uniquePairs = Array.from(
+    new Set(suggestions.map(s => `${s.entityId}::${s.language || ''}`))
+  )
+    .map(key => {
+      const [sharedId, language] = key.split('::');
+      return { sharedId, language } as { sharedId: string; language: string };
+    })
+    .filter(p => p.sharedId && p.language);
+
+  const entityQuery = { $or: uniquePairs } as UwaziFilterQuery<any>;
 
   return entityQuery;
 }
@@ -243,11 +251,21 @@ async function getEntitiesForSuggestions(extractorId: ObjectIdSchema, limit?: nu
   // Validate that the property exists in the template (throws if not found)
   await getPropertyType(extractor.templates, extractor.property);
 
-  const BATCH_SIZE = limit || BATCH_SIZE_FOR_PROPERTY;
+  const BATCH_SIZE = typeof limit === 'number' ? limit : BATCH_SIZE_FOR_PROPERTY;
+
+  // In process_selected, if the selected queue is empty (after trimming), do not sample.
+  // End the find phase immediately.
+  const isSelectedMode = model.processRun?.mode === 'process_selected';
+  const hasSelectedQueue = Array.isArray(model.processRun?.findSuggestionsSharedIds)
+    ? model.processRun!.findSuggestionsSharedIds!.length > 0
+    : false;
+  if (isSelectedMode && !hasSelectedQueue) {
+    return [];
+  }
 
   let entityQuery: UwaziFilterQuery<any> | null = {};
 
-  if (model.findSuggestionsRunTimestamp) {
+  if (model.processRun?.findSuggestionsSharedIds?.length) {
     entityQuery = await getEntitiesForIdsQuery(model, BATCH_SIZE);
   } else {
     entityQuery = await getEntitiesForSuggestionsQuery(extractorId, model, BATCH_SIZE);
@@ -361,22 +379,14 @@ async function getFilesForTraining(extractor: IXExtractorType) {
   ) => {
     await cursor.eachAsync(
       async ({ fileId, language, file, entityId, entityLanguage, segmentation, currentValue }) => {
-        let propertyValue;
-
-        if (propertyTypeIsWithoutExtractedMetadata(targetProperty.type)) {
-          propertyValue = entityLanguage.metadata.map(({ value, label }: any) => ({
-            value: ensure<string>(value),
-            label: ensure<string>(label),
-          }));
-        } else {
-          propertyValue = currentValue.toString();
-
-          if (targetProperty.type === 'date') {
-            propertyValue = moment(currentValue * 1000)
-              .utc()
-              .format('YYYY-MM-DD');
-          }
-        }
+        const propertyValue = deriveTrainingPropertyValue(targetProperty.type, {
+          currentValue,
+          selectionText: file?.extractedMetadata?.[0]?.selection?.text,
+          entityValues: entityLanguage.metadata?.map(({ value, label }: any) => ({
+            value,
+            label,
+          })),
+        });
         const parsed = {
           _id: fileId,
           language,
@@ -400,11 +410,11 @@ async function getFileIdsWithReadySegmentations(
   limit: number
 ): Promise<ObjectIdSchema[]> {
   const [currentModel] = await ixmodels.get({ extractorId });
-  const targetLimit = limit || BATCH_SIZE_FOR_PDF;
+  const targetLimit = typeof limit === 'number' ? limit : BATCH_SIZE_FOR_PDF;
 
-  // Use balanced sampling for all suggestion finding (both test runs and regular runs)
+  // Use process-aware sampling when filters are set; otherwise balanced sampling
   // Get extra suggestions since some might have failed segmentations
-  const suggestions = await Suggestions.getBalancedSample(
+  const suggestions = await Suggestions.getSampleForProcess(
     extractorId,
     currentModel,
     targetLimit * 3
@@ -414,14 +424,18 @@ async function getFileIdsWithReadySegmentations(
     return [];
   }
 
-  const allFileIds: ObjectIdSchema[] = [];
+  const readyLabeledFileIds: ObjectIdSchema[] = [];
+  const readyUnlabeledFileIds: ObjectIdSchema[] = [];
   const suggestionsWithFailedSegmentations: IXSuggestionType[] = [];
 
   // Process suggestions in batches to check segmentation status (keep existing batching logic)
   const batchSize = 100;
   let suggestionIndex = 0;
 
-  while (suggestionIndex < suggestions.length && allFileIds.length < targetLimit) {
+  while (
+    suggestionIndex < suggestions.length &&
+    readyLabeledFileIds.length + readyUnlabeledFileIds.length < targetLimit
+  ) {
     const currentBatch = suggestions.slice(suggestionIndex, suggestionIndex + batchSize);
 
     if (!currentBatch.length) {
@@ -448,8 +462,21 @@ async function getFileIdsWithReadySegmentations(
       const failedSuggestions = currentBatch.filter(s =>
         failedSegmentationFileIds.some(failedId => failedId.toString() === s.fileId?.toString())
       );
-
-      allFileIds.push(...readySegmentationFileIds);
+      // Partition ready fileIds into labeled / unlabeled buckets preserving insertion order
+      const readySet = new Set(readySegmentationFileIds.map(id => id.toString()));
+      currentBatch.forEach(s => {
+        const fId = s.fileId as ObjectIdSchema | undefined;
+        if (!fId) return;
+        if (!readySet.has(fId.toString())) return;
+        const isLabeled = !!s.state?.labeled;
+        if (isLabeled) {
+          if (!readyLabeledFileIds.some(x => x.toString() === fId.toString())) {
+            readyLabeledFileIds.push(fId);
+          }
+        } else if (!readyUnlabeledFileIds.some(x => x.toString() === fId.toString())) {
+          readyUnlabeledFileIds.push(fId);
+        }
+      });
       suggestionsWithFailedSegmentations.push(...failedSuggestions);
     }
 
@@ -471,7 +498,30 @@ async function getFileIdsWithReadySegmentations(
     await IXSuggestionsModel.saveMultiple(modifiedSuggestions);
   }
 
-  return allFileIds.slice(0, targetLimit);
+  // Balance selection: take up to half from each bucket, then fill the remainder
+  const idealHalf = Math.floor(targetLimit / 2);
+  const chosen: ObjectIdSchema[] = [];
+
+  const takeFrom = (arr: ObjectIdSchema[], count: number) => {
+    for (let i = 0; i < arr.length && chosen.length < count; i += 1) {
+      const id = arr[i];
+      if (!chosen.some(x => x.toString() === id.toString())) {
+        chosen.push(id);
+      }
+    }
+  };
+
+  const firstLabeled = Math.min(idealHalf, readyLabeledFileIds.length);
+  const firstUnlabeled = Math.min(idealHalf, readyUnlabeledFileIds.length);
+  takeFrom(readyLabeledFileIds, firstLabeled);
+  takeFrom(readyUnlabeledFileIds, firstUnlabeled + firstLabeled);
+
+  // Fill remainder from either side until reaching targetLimit
+  const fillTarget = targetLimit;
+  if (chosen.length < fillTarget) takeFrom(readyLabeledFileIds, fillTarget);
+  if (chosen.length < fillTarget) takeFrom(readyUnlabeledFileIds, fillTarget);
+
+  return chosen.slice(0, targetLimit);
 }
 
 function createBaseFileQuery() {
@@ -513,16 +563,17 @@ async function getNextSharedIdsBatch(
   model: EnforcedWithId<IXModelType>,
   batchSize: number
 ): Promise<string[] | null> {
-  if (!model.findSuggestionsSharedIds?.length) {
+  const runIds = model.processRun?.findSuggestionsSharedIds || [];
+  if (!runIds.length) {
     await ixmodels.unsetFindSuggestionsData(model._id);
     return null;
   }
 
-  const sharedIdsToProcess = model.findSuggestionsSharedIds.slice(0, batchSize);
+  const sharedIdsToProcess = runIds.slice(0, batchSize);
 
   await ixmodels.updateMany(
     { _id: model._id },
-    { $set: { findSuggestionsSharedIds: model.findSuggestionsSharedIds.slice(batchSize) } }
+    { $set: { 'processRun.findSuggestionsSharedIds': runIds.slice(batchSize) } }
   );
 
   return sharedIdsToProcess;
@@ -569,11 +620,21 @@ async function getFilesForSuggestions(extractorId: ObjectIdSchema, limit?: numbe
     return [];
   }
 
-  const BATCH_SIZE = limit || BATCH_SIZE_FOR_PDF;
+  const BATCH_SIZE = typeof limit === 'number' ? limit : BATCH_SIZE_FOR_PDF;
+
+  // In process_selected, if the selected queue is empty (after trimming), do not sample.
+  // End the find phase immediately.
+  const isSelectedMode = model.processRun?.mode === 'process_selected';
+  const hasSelectedQueue = Array.isArray(model.processRun?.findSuggestionsSharedIds)
+    ? model.processRun!.findSuggestionsSharedIds!.length > 0
+    : false;
+  if (isSelectedMode && !hasSelectedQueue) {
+    return [];
+  }
 
   let filesQuery: UwaziFilterQuery<FileType> | null = {};
 
-  if (model.findSuggestionsRunTimestamp) {
+  if (model.processRun?.findSuggestionsSharedIds?.length) {
     filesQuery = await getFilesForIdsQuery(model, BATCH_SIZE);
   } else {
     filesQuery = await getFilesForSuggestionsQuery(extractorId, BATCH_SIZE);
@@ -598,6 +659,8 @@ async function getFilesForSuggestions(extractorId: ObjectIdSchema, limit?: numbe
 export {
   BATCH_SIZE_FOR_PDF,
   BATCH_SIZE_FOR_PROPERTY,
+  MAX_TRAINING_FILES_NUMBER,
+  MAX_TRAINING_ENTITIES_NUMBER,
   getFilesForTraining,
   getEntitiesForTraining,
   getFilesForSuggestions,
@@ -611,4 +674,4 @@ export {
   NoSegmentedFiles,
   NoFilesForTraining,
 };
-export type { FileWithAggregation };
+export type { FileWithAggregation, PropertyValue };

@@ -1,15 +1,15 @@
 /* eslint-disable max-statements */
 import { WithId } from 'mongodb';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
-import { getConnection } from 'api/common.v2/database/getConnectionForCurrentTenant';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
+import { getConnection } from 'api/core/infrastructure/mongodb/common/getConnectionForCurrentTenant';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import { mongoPXEntitiesStatusCollection } from 'api/paragraphExtraction/infrastructure/MongoPXEntitiesStatusDataSource';
 import {
   CreateParagraphExtractionEntityStatusesJob,
   CreateParagraphExtractionEntityStatusesJobParams,
 } from 'api/paragraphExtraction/jobs/CreateParagraphExtractionEntityStatusesJob';
-import { JobsDispatcher } from 'api/queue.v2/application/contracts/JobsDispatcher';
-import { NonRetryableJobError } from 'api/queue.v2/infrastructure/errors';
+import { JobsDispatcher } from 'api/core/libs/queue/application/contracts/JobsDispatcher';
+import { NonRetryableJobError } from 'api/core/libs/queue/infrastructure/errors';
 import { EntitySchema } from 'shared/types/entityType';
 import { FileType } from 'shared/types/fileType';
 import { EntityStatus } from 'api/paragraphExtraction/domain/PXEntityStatusModel';
@@ -23,7 +23,7 @@ const TEST_SPECIFIC_BATCH_SIZE = 2;
 
 const setUpJob = (mockDispatcher: JobsDispatcher) => {
   const connection = getConnection();
-  const transactionManager = DefaultTransactionManager();
+  const transactionManager = TransactionManagerFactory.default();
 
   const createEntityStatusesUseCase = PXCreateEntityStatusesFactory.createDefault({
     connection,
@@ -50,6 +50,7 @@ describe('CreateParagraphExtractionEntityStatusesJob', () => {
     await testingEnvironment.setUp(createBaseFixtures());
     mockDispatcher = {
       dispatch: jest.fn().mockResolvedValue(undefined),
+      dispatchMany: jest.fn().mockResolvedValue(undefined),
     };
   });
 

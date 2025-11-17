@@ -9,6 +9,7 @@ import request from 'supertest';
 import mailer from 'api/utils/mailer';
 // eslint-disable-next-line node/no-restricted-import
 import fs from 'fs/promises';
+import { ObjectId } from 'mongodb';
 import { legacyLogger } from '../../log';
 import instrumentRoutes from '../../utils/instrumentRoutes';
 import { createDirIfNotExists, deleteFiles } from '../filesystem';
@@ -34,7 +35,7 @@ describe('upload routes', () => {
       'invalid_document.txt',
       'spn.pdf',
       'importcsv.csv',
-      'f2082bf51b6ef839690485d7153e847a.pdf',
+      'english_testing_file.pdf',
     ];
     const filesToDelete = (await fs.readdir(directory)).filter(filename =>
       dontDeleteFiles.includes(filename)
@@ -55,8 +56,8 @@ describe('upload routes', () => {
         encoding: '7bit',
         mimetype: 'application/octet-stream',
         destination: `${__dirname}/uploads/`,
-        filename: 'f2082bf51b6ef839690485d7153e847a.pdf',
-        path: `${__dirname}/uploads/f2082bf51b6ef839690485d7153e847a.pdf`,
+        filename: 'english_testing_file.pdf',
+        path: `${__dirname}/uploads/english_testing_file.pdf`,
         size: 171411271,
       };
       req = {
@@ -101,6 +102,27 @@ describe('upload routes', () => {
           files: [file, attachment],
           io: {},
         };
+      });
+    });
+
+    it('should create an Entity and return the created Entity on body response', async () => {
+      const response = await routes.post('/api/public', { ...req, files: [] });
+
+      expect(response).toEqual({
+        _id: expect.any(ObjectId),
+        title: req.body.entity.title,
+        language: req.language,
+        template: new ObjectId(req.body.entity.template),
+        sharedId: expect.any(String),
+        published: false,
+        creationDate: 1000,
+        editDate: 1000,
+        metadata: {},
+        permissions: [{ refId: expect.any(String), type: 'user', level: 'write' }],
+        obsoleteMetadata: [],
+        __v: 0,
+        documents: [],
+        attachments: [],
       });
     });
 

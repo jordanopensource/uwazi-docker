@@ -1,7 +1,7 @@
 import { LanguageISO6391 } from 'shared/types/commonTypes';
 
-import { UseCase } from 'api/common.v2/contracts/UseCase';
-import { SettingsDataSource } from 'api/settings.v2/contracts/SettingsDataSource';
+import { UseCase } from 'api/core/libs/UseCase';
+import { SettingsDataSource } from 'api/core/application/contracts/SettingsDataSource';
 import { FilesDataSource } from 'api/files.v2/contracts/FilesDataSource';
 
 import {
@@ -42,7 +42,7 @@ class PXGetExtractorStatuses
       await prev;
 
       const entityValidFiles = await filesDS
-        .getDocumentsForEntity(row.entity.sharedId, { languages: installedLanguages })
+        .getProcessedDocsForEntity(row.entity.sharedId, { languages: installedLanguages })
         .all();
 
       row.availableFileLanguages = [...new Set(entityValidFiles.map(f => f.language))];

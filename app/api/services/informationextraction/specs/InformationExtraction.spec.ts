@@ -38,16 +38,15 @@ import { IXModelsModel } from '../IXModelsModel';
 import { Extractors } from '../ixextractors';
 import { IXWebSocketEvents } from '../WebSocketEvents';
 import { FileWithAggregation, NoFilesForTraining, NoLabeledEntities } from '../ixMaterials';
-import { TEST_RUN_SUGGESTIONS_SIZE } from '../ixmodels';
 
 let informationExtractionForJob: InformationExtraction;
 jest.mock('api/services/tasksmanager/TaskManager.ts');
 jest.mock('api/socketio/setupSockets');
-jest.mock('api/queue.v2/configuration/factories', () => ({
+jest.mock('api/core/libs/queue/configuration/factories', () => ({
   DefaultDispatcher: () => {
     const {
       SyncDispatcherForTests,
-    } = require('api/queue.v2/infrastructure/SyncDispatcherForTests');
+    } = require('api/core/libs/queue/infrastructure/SyncDispatcherForTests');
     const {
       InformationExtraction: InformationExtraction1,
     } = require('api/services/informationextraction/InformationExtraction');
@@ -318,6 +317,7 @@ describe('InformationExtraction', () => {
         language_iso: 'en',
         label_text: '1088985600',
         label_segments_boxes: [{ top: 0, left: 0, width: 0, height: 0, page_number: '1' }],
+        useForTraining: false,
       });
     });
 
@@ -383,6 +383,7 @@ describe('InformationExtraction', () => {
             label: 'A',
           },
         ],
+        useForTraining: false,
       });
     });
 
@@ -425,6 +426,7 @@ describe('InformationExtraction', () => {
             label: 'P3',
           },
         ],
+        useForTraining: false,
       });
     });
 
@@ -441,6 +443,7 @@ describe('InformationExtraction', () => {
         language_iso: 'en',
         label_text: '2011-03-04',
         label_segments_boxes: [{ top: 0, left: 0, width: 0, height: 0, page_number: '1' }],
+        useForTraining: false,
       });
     });
 
@@ -448,6 +451,15 @@ describe('InformationExtraction', () => {
       const extractorId = factory.id('extractor_target_rich_text_source_pdf');
       const xml1 = 'extractor_target_rich_text_source_pdf_entity_1_f1_en.xml';
       const xml2 = 'extractor_target_rich_text_source_pdf_entity_1_f1_es.xml';
+
+      // Mark the Spanish file as curated for training (Stage A)
+      await IXSuggestionsModel.updateMany(
+        {
+          extractorId,
+          fileId: factory.id('extractor_target_rich_text_source_pdf_entity_1_f1_es'),
+        },
+        { $set: { useForTraining: true } }
+      );
 
       await informationExtraction.trainModel(extractorId);
 
@@ -477,6 +489,7 @@ describe('InformationExtraction', () => {
         language_iso: 'en',
         label_text: 'any_rich_text_value_english',
         label_segments_boxes: [{ top: 0, left: 0, width: 0, height: 0, page_number: '1' }],
+        useForTraining: false,
       });
 
       expect(suggestion2).toEqual({
@@ -489,6 +502,7 @@ describe('InformationExtraction', () => {
         language_iso: 'es',
         label_text: 'any_rich_text_value_spanish',
         label_segments_boxes: [{ top: 0, left: 0, width: 0, height: 0, page_number: '1' }],
+        useForTraining: true,
       });
     });
 
@@ -747,9 +761,9 @@ describe('InformationExtraction', () => {
     });
   });
 
-  describe('testModel', () => {
-    it('should send xmls (as in trainModel)', async () => {
-      await informationExtraction.testModel(factory.id('prop1extractor'));
+  describe('train with limited finding suggestions', () => {
+    it('should send xmls', async () => {
+      await informationExtraction.trainModel(factory.id('prop1extractor'), 1);
 
       const xmlA = await readDocument('A');
 
@@ -764,14 +778,6 @@ describe('InformationExtraction', () => {
       expect(IXExternalService.filesNames.sort()).toEqual(
         ['documentA.xml', 'documentC.xml'].sort()
       );
-    });
-
-    it('should mark the model as testRun', async () => {
-      await informationExtraction.testModel(factory.id('prop1extractor'));
-
-      const [model] = await IXModelsModel.get({ extractorId: factory.id('prop1extractor') });
-      expect(model.testRun).toBe(true);
-      expect(model.testRunSuggestionsToFind).toBe(TEST_RUN_SUGGESTIONS_SIZE);
     });
   });
 
@@ -804,6 +810,23 @@ describe('InformationExtraction', () => {
       );
 
       jest.clearAllMocks();
+    });
+
+    it('should not start suggestions when suggestionsToFind is 0', async () => {
+      const extractorId = factory.id('prop1extractor');
+
+      const [existing] = await IXModelsModel.get({ extractorId });
+      await IXModelsModel.save({
+        ...existing,
+        findingSuggestions: true,
+        totalSuggestionsToFind: 0,
+      });
+
+      const startTaskSpy = jest.spyOn(informationExtraction as any, 'startSuggestionsTask');
+
+      await informationExtraction.getSuggestions(extractorId);
+
+      expect(startTaskSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -1611,12 +1634,29 @@ describe('InformationExtraction', () => {
 
     it('should stop the model when all the suggestions are done', async () => {
       await informationExtraction.getSuggestions(factory.id('sourceTextExtractor1'));
+
+      // Make second call have no eligible materials (mark seen in this run)
+      const [m] = await IXModelsModel.get({ extractorId: factory.id('sourceTextExtractor1') });
+      const runTs = m?.processRun?.suggestionsRunTimestamp || Date.now();
+      await IXSuggestionsModel.updateMany(
+        { extractorId: factory.id('sourceTextExtractor1') },
+        {
+          $set: {
+            date: 1,
+            'state.obsolete': false,
+            'state.error': false,
+            'modelData.suggestionsRunTimestamp': runTs,
+          },
+        }
+      );
+
       await informationExtraction.getSuggestions(factory.id('sourceTextExtractor1'));
+
       const [model] = await IXModelsModel.get({ extractorId: factory.id('sourceTextExtractor1') });
       expect(model.findingSuggestions).toBe(false);
     });
 
-    describe('testRun', () => {
+    describe('Limited runs', () => {
       beforeEach(async () => {
         await testingDB.mongodb
           ?.collection('ixmodels')
@@ -1652,7 +1692,7 @@ describe('InformationExtraction', () => {
           extractorId: factory.id('sourceTextExtractor1'),
           status: 'processing',
         });
-        expect(suggestionsInProcessing.length).toBe(3);
+        expect(suggestionsInProcessing.length).toBe(1);
         expect(suggestionsInProcessing.map(s => s.entityId)).toContain('entity_without_label_data');
         expect(setupSockets.emitToTenant).toHaveBeenNthCalledWith(
           1,
@@ -1660,7 +1700,7 @@ describe('InformationExtraction', () => {
           'ix_model_status',
           factory.id('sourceTextExtractor1'),
           'ready',
-          'Test completed'
+          'Completed'
         );
       });
 

@@ -10,12 +10,9 @@ A source template must,A source template must
 A target template needs to have the following properties,A target template needs to have the following properties
 A valid email is required,La dirección de correo electrónico es obligatorio
 Accept,Aceptar
-Accept suggestion,Accept suggestion
-Accept suggestions,Accept suggestions
 Accepted suggestion on entity,Sugerencia aceptada en la entidad
 Account,Cuenta
 Account locked,Account locked
-Account locked. Check your email to unlock.,Cuenta bloqueada. Revisa tu correo electrónico para desbloquearla.
 Account unlocked successfully,Cuenta desbloqueada satisfactoriamente
 Account updated,Account updated
 Accuracy,Accuracy
@@ -55,6 +52,7 @@ Add thesaurus value,Añadir valor del tesauro
 Add timelink,Añadir línea de tiempo
 Add to all languages,Añadir a todos los idiomas
 Add to table of contents,Añadir a la tabla de contenidos
+Add to training set,Add to training set
 Add user,Añadir usuario
 add value,añadir valor
 Add/delete users and assign roles,Añadir / Eliminar usuarios y asignar roles
@@ -77,8 +75,10 @@ All of the paragraphs will be deleted,All of the paragraphs will be deleted
 All of the previously created paragraphs will be deleted and recreated after the process.,All of the previously created paragraphs will be deleted and recreated after the process.
 Allow captcha bypass,Permitir la omisión de captcha
 Already exists,Already exists
+Amount,Amount
 An error has occured while deleting a language:,An error has occured while deleting a language:
 An error has occured while installing languages:,An error has occured while installing languages:
+An error has occurred,Ocurrió un error
 An error has occurred during data export,Se ha producido un error durante la exportación de datos.
 An error occurred,Se ha producido un error
 Analytics,Analytics
@@ -97,6 +97,7 @@ Attachment renamed,Archivo adjunto renombrado
 Attachment uploaded,Archivo adjunto subido
 Attachments,Archivos adjuntos
 Authentication code,Código de autenticación
+Auto-accept suggestions,Auto-accept suggestions
 auto-created,autogenerado
 Automatic Table of Contents,Tabla de contenidos automática.
 Automatically generated,Se genera automáticamente
@@ -128,6 +129,7 @@ Character support description,"Esta opción mejora la compatibilidad con idiomas
 Character support process warning,"Este proceso podría demorar varios minutos y probablemente cambiará las URL a los filtros de la colección. Si tienes menús o enlaces que usan dichas URL, probablemente dejarán de funcionar después de la actualización. Deberás actualizarlos manualmente."
 Character support revert warning,"Después de seleccionar esta opción, no podrás volver a usar los nombres de propiedad heredada. Si no tienes problemas con los nombres de las propiedades de tu plantilla, recomendamos no marcar esta opción."
 Check to make this instance public (non-logged in users can see public documents and entities),Check to make this instance public (non-logged in users can see public documents and entities)
+Choose which data to use for training,Choose which data to use for training
 Clear,Limpiar
 Clear all,Clear all
 Clear All,Clear All
@@ -223,7 +225,6 @@ DELETE,Eliminar
 Delete entities and documents,Eliminar entidades y documentos
 Delete file,Eliminar archivo
 Delete language,Eliminar idioma
-Delete Property,Eliminar propiedad
 Deleted attachment,Archivo adjunto eliminado
 Deleted custom file,Archivo personalizado eliminado
 Deleted entity,Entidad eliminada
@@ -265,7 +266,6 @@ Drag row,Drag row
 Drop your files here to upload or,Suelta los archivos aquí para cargar o
 Duplicate values not allowed.,No se permiten valores duplicados.
 Duplicated email,Correo electrónico duplicado
-Duplicated label,Etiqueta duplicada
 Duplicated name,Nombre duplicado
 Duplicated username,Nombre de usuario duplicado
 Edit,Editar
@@ -300,8 +300,6 @@ Entity types,Tipos de entidades
 Entity updated,Entidad actualizada
 Error,Error
 Error adding thesauri.,Error adding thesauri.
-Error creating relationship type.,Error creating relationship type.
-Error creating thesaurus.,Error creating thesaurus.
 Error deleting template(s),Error deleting template(s)
 Error loading your image,Error loading your image
 Error saving template.,Error saving template.
@@ -341,14 +339,21 @@ Filters OR operator,OR
 Filters saved,Filters saved
 Find,Encontrar
 Find suggestions,Encontrar sugerencias
+Find suggestions after training,Find suggestions after training
+Find suggestions for,Find suggestions for
+Find suggestions for selected,Find suggestions for selected
 Finding suggestions,Encontrando sugerencias
 Fine tune,Afinar búsqueda
 Fit,Encajar
 Flag,Bandera
 for,for
+For all entities,For all entities
+For entities with blank values,For entities with blank values
 Forgot Password?,¿Has olvidado tu contraseña?
 Forms and email configuration,Configuración de formularios y correo electrónico
 From,From
+From all suggestions,From all suggestions
+From previous step,From previous step
 Full width,Ancho completo
 General,General
 General Information,General Information
@@ -406,6 +411,7 @@ Invalid csv: all the values for a row must be either nested or non-nested,CSV no
 Invalid csv: nested value need to be under a non-nested value,CSV no válido: los valores anidados necesitan estar bajo un valor no anidado
 Invalid form,Formulario no válido
 It could also very easily break the app. Only write code here if you know exactly what you are doing.,La aplicación incluso podría dejar de funcionar. Escribe código aquí únicamente si sabes exactamente lo que estás haciendo.
+it has been logged with request id #,ha sido registrado con el id de solicitud #
 Item,Elemento
 Items:,Elementos:
 Javascript,Javascript
@@ -470,6 +476,10 @@ Mapping conflict error,"Es necesaria una reindexación de su colección. El moti
 Maps,Mapas
 Mark as Reviewed,Marcar como Revisado
 Markdown,Markdown
+marked and labeled,marked and labeled
+marked for training,marked for training
+Marked for training + all labeled entries,Marked for training + all labeled entries
+Marked for training only,Marked for training only
 Match,Match
 Matching,Coincidencia
 matching,matching
@@ -587,6 +597,7 @@ Other users will be affected by this action!,Otros usuarios pueden resultar afec
 Others,Others
 out of,fuera de
 Page,Página
+Page not found,Página no encontrada
 Pages,Páginas
 Paragrap number extraction property (numeric),Paragrap number extraction property (numeric)
 Paragraph,Paragraph
@@ -625,6 +636,9 @@ Priority sorting,Ordenamiento prioritario
 Priority sorting description,"Las propiedades marcadas como ordenamiento prioritaria se utilizarán como criterios de ordenamiento predeterminados. Si se marca más de una propiedad como ordenación prioritaria, el sistema intentará elegir la que mejor se ajuste. Al enumerar tipos de plantillas mixtas, el sistema seleccionará el mejor ordenamiento combinado."
 Private entities description,AVISO: Las entidades seleccionadas serán **privadas**. Solo usuarios con permiso podrán visualizarlos.
 Private instance,Instancia privada
+Process,Process
+Process extractor,Process extractor
+Process selected,Process selected
 Processed,Processed
 Processing,Procesando
 Properties,Propiedades
@@ -683,6 +697,7 @@ RelationType saved,Tipo de Relación guardada
 remaining files,remaining files
 Remote Server Unreachable,Remote Server Unreachable
 Remove,Eliminar
+Remove from training set,Remove from training set
 remove icon,eliminar ícono
 Removed language,Idioma eliminado
 Rename,Renombrar
@@ -780,6 +795,7 @@ shown of,listados de
 Sign in,Registrarse
 Single relationships must have a hub,Las relaciones simples deben tener un nodo
 Size,Tamaño
+Skip to main content,Skip to main content
 Something went wrong,Algo salió mal
 Sort,Ordenar
 Sort ascending,Orden ascendente
@@ -836,7 +852,6 @@ Template(s),Template(s)
 Template(s) deleted successfully.,Template(s) deleted successfully.
 Templates,Plantillas
 Templates:,Templates:
-Test run,Test run
 Text,Texto
 Text references limit warning,Las referencias de texto están temporalmente limitadas a un máximo de 300. Actualmente estamos trabajando en una solución para este problema.
 The import process threw an error:,El proceso de importación tiene un error.
@@ -898,8 +913,12 @@ Total files,Total de archivos
 total files,total files
 "Total files from main documents, supporting files and uploads","Total files from main documents, supporting files and uploads"
 total users,total users
+Train,Train
+Train model,Train model
+Train model description,Training machine learning models may take from minutes up to a couple of hours depending on the amount of labeled data and the difficulty of the task.
 Training,Entrenando
 Training model...,Entrenando el modelo…
+Training sample,Training sample
 Translate,Traducir
 Translation,Translation
 Translations,Traducciones
@@ -916,6 +935,7 @@ Two-step verification,Verificación de dos pasos.
 Two-step verification token required,El token de verificación es obligatorio
 Type,Tipo
 "Unable to save, failed response","No se pudo guardar, respuesta fallida"
+Unauthorized,No autorizado
 Unexpected error,Error inesperado
 Uninstall,Desinstalar
 Uninstall language,Desinstalar idioma
@@ -951,6 +971,7 @@ Uploads,Subir archivos
 URL,URL
 Use,Usar
 Use as filter,Usar como filtro
+Use for training,Use for training
 User,Usuario
 User Action,User Action
 User Role,User Role

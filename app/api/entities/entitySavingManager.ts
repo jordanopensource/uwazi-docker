@@ -2,7 +2,35 @@ import { set } from 'lodash';
 import entities from 'api/entities/entities';
 import { EntityWithFilesSchema } from 'shared/types/entityType';
 import { UserSchema } from 'shared/types/userType';
+import { isValidUrl, sanitizeUrl } from 'shared/urlValidationUtils';
 import { handleAttachmentInMetadataProperties, processFiles, saveFiles } from './managerFunctions';
+
+const validateAndSanitizeUrls = (entity: EntityWithFilesSchema): EntityWithFilesSchema => {
+  if (!entity.metadata) return entity;
+
+  const sanitizedEntity = { ...entity };
+  if (!sanitizedEntity.metadata) return sanitizedEntity;
+
+  Object.entries(sanitizedEntity.metadata).forEach(([_key, values]) => {
+    if (Array.isArray(values)) {
+      values.forEach(value => {
+        if (value && typeof value.value === 'string' && value.value.startsWith('http')) {
+          if (!isValidUrl(value.value)) {
+            value.value = '';
+            return;
+          }
+
+          const sanitizedUrl = sanitizeUrl(value.value);
+          if (sanitizedUrl !== value.value) {
+            value.value = sanitizedUrl;
+          }
+        }
+      });
+    }
+  });
+
+  return sanitizedEntity;
+};
 
 const saveEntity = async (
   _entity: EntityWithFilesSchema,
@@ -20,11 +48,12 @@ const saveEntity = async (
     }
   );
 
-  const entity = handleAttachmentInMetadataProperties(_entity, attachments);
+  const sanitizedEntity = validateAndSanitizeUrls(_entity);
+  const entity = handleAttachmentInMetadataProperties(sanitizedEntity, attachments);
 
   const updatedEntity = await entities.save(
     entity,
-    { user, language },
+    { user, language, attachments: attachments as never[] },
     { includeDocuments: false }
   );
 

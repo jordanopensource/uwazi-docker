@@ -16,7 +16,8 @@ import {
 import { handleError } from 'api/utils';
 import { serviceMiddleware } from './serviceMiddleware';
 import { GetSuggestionsForTableQuery } from './getSuggestionsForTableQuery/getSuggestionsForTableQuery';
-import { FindSuggestionsForIds } from './useCases/FindSuggestionsForIds';
+import { ProcessSuggestionsController } from './adapters/ProcessSuggestionsController';
+import { TrainingSetController } from './adapters/TrainingSetController';
 
 const IX = new InformationExtraction();
 
@@ -35,21 +36,6 @@ function extractorIdRequestValidation(root = 'body') {
     },
   });
 }
-
-const findSuggestionsRequestValidation = validateAndCoerceRequest({
-  type: 'object',
-  properties: {
-    body: {
-      type: 'object',
-      additionalProperties: false,
-      required: ['extractorId', 'sharedIds'],
-      properties: {
-        extractorId: { type: 'string' },
-        sharedIds: { type: 'array', items: { type: 'string' } },
-      },
-    },
-  },
-});
 
 export const suggestionsRoutes = (app: Application) => {
   app.get(
@@ -148,39 +134,57 @@ export const suggestionsRoutes = (app: Application) => {
     '/api/suggestions/train',
     serviceMiddleware,
     needsAuthorization(['admin', 'editor']),
-    extractorIdRequestValidation('body'),
+    validateAndCoerceRequest({
+      type: 'object',
+      properties: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['extractorId'],
+          properties: {
+            extractorId: { type: 'string' },
+            suggestionsToFind: { type: 'number', minimum: 0 },
+            options: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                samplePolicy: {
+                  type: 'string',
+                  enum: ['only_marked', 'marked_plus_labeled'],
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
     async (req, res, _next) => {
-      const output = await IX.trainModel(ObjectId.createFromHexString(req.body.extractorId));
-      res.status(202).json(output);
+      try {
+        const { extractorId, suggestionsToFind, options } = req.body;
+        const output = await IX.trainModel(
+          ObjectId.createFromHexString(extractorId),
+          suggestionsToFind,
+          options
+        );
+        res.status(202).json(output);
+      } catch (e: any) {
+        res.status(500).json({ error: e?.message || 'Internal Server Error' });
+      }
     }
   );
 
   app.post(
-    '/api/suggestions/test_model',
+    '/api/suggestions/process',
     serviceMiddleware,
     needsAuthorization(['admin', 'editor']),
-    extractorIdRequestValidation('body'),
-    async (req, res, _next) => {
-      const output = await IX.testModel(ObjectId.createFromHexString(req.body.extractorId));
-
-      res.status(202).json(output);
-    }
+    ProcessSuggestionsController.createHandler()
   );
 
   app.post(
-    '/api/suggestions/find',
+    '/api/suggestions/training-set',
     serviceMiddleware,
     needsAuthorization(['admin', 'editor']),
-    findSuggestionsRequestValidation,
-    async (req, res, _next) => {
-      const { extractorId, sharedIds } = req.body;
-      const findSuggestionsForIds = new FindSuggestionsForIds(IX);
-      const output = await findSuggestionsForIds.execute({
-        extractorId: ObjectId.createFromHexString(extractorId),
-        sharedIds,
-      });
-      res.status(202).json(output);
-    }
+    TrainingSetController.createHandler()
   );
 
   app.post(

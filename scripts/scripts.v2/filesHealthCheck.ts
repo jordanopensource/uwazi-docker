@@ -1,11 +1,12 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
 import { config } from 'api/config';
 import { DefaultFilesDataSource } from 'api/files.v2/database/data_source_defaults';
 import { FilesHealthCheck } from 'api/files.v2/FilesHealthCheck';
 import { S3FileStorage } from 'api/files.v2/infrastructure/S3FileStorage';
 import { DB } from 'api/odm';
 import { tenants } from 'api/tenants';
+import { FileContentsIO } from 'api/core/infrastructure/files/FileContentIO';
 
 const { tenant, allTenants } = require('yargs')
   .option('tenant', {
@@ -35,9 +36,9 @@ async function handleTenant(tenantName: string) {
       ...config.s3,
     });
 
-    const transactionManager = DefaultTransactionManager();
+    const transactionManager = TransactionManagerFactory.default();
     const filesHealthCheck = new FilesHealthCheck(
-      new S3FileStorage(s3Client, tenants.current()),
+      new S3FileStorage(s3Client, new FileContentsIO, tenants.current()),
       DefaultFilesDataSource(transactionManager)
     );
 

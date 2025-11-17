@@ -1,14 +1,14 @@
-import { ResultSet } from 'api/common.v2/contracts/ResultSet';
-import { MongoDataSource } from 'api/common.v2/database/MongoDataSource';
-import { MongoIdHandler } from 'api/common.v2/database/MongoIdGenerator';
-import { MongoResultSet } from 'api/common.v2/database/MongoResultSet';
-import { MongoTransactionManager } from 'api/common.v2/database/MongoTransactionManager';
+import { ResultSet } from 'api/core/application/contracts/ResultSet';
+import { MongoDataSource } from 'api/core/infrastructure/mongodb/common/MongoDataSource';
+import { MongoIdHandler } from 'api/core/infrastructure/mongodb/common/MongoIdGenerator';
+import { MongoResultSet } from 'api/core/infrastructure/mongodb/common/MongoResultSet';
+import { MongoTransactionManager } from 'api/core/infrastructure/mongodb/common/MongoTransactionManager';
 import entities from 'api/entities/entities';
 import v1EntitiesModel from 'api/entities/entitiesModel';
 import { search } from 'api/search';
-import { MongoSettingsDataSource } from 'api/settings.v2/database/MongoSettingsDataSource';
-import { MongoTemplatesDataSource } from 'api/templates.v2/database/MongoTemplatesDataSource';
-import { Db } from 'mongodb';
+import { MongoSettingsDataSource } from 'api/core/infrastructure/mongodb/MongoSettingsDataSource';
+import { MongoTemplatesDataSource } from 'api/core/infrastructure/mongodb/template/MongoTemplatesDataSource';
+import { Db, ObjectId } from 'mongodb';
 import { MetadataSchema } from 'shared/types/commonTypes';
 import { EntitiesDataSource } from '../contracts/EntitiesDataSource';
 import { Entity, EntityMetadata, MetadataValue } from '../model/Entity';
@@ -215,5 +215,16 @@ export class MongoEntitiesDataSource
       sharedId: result.sharedId,
       obsoleteMetadata: result.obsoleteMetadata ?? [],
     }));
+  }
+
+  async anyExistsForTemplate(templateId: string): Promise<boolean> {
+    const count = await this.getCollection().countDocuments(
+      {
+        template: ObjectId.createFromHexString(templateId),
+      },
+      { limit: 1 }
+    );
+
+    return count > 0;
   }
 }

@@ -8,11 +8,13 @@ import { Translate } from 'app/I18N';
 import { Button, Card, Sidepanel } from 'V2/Components/UI';
 import { Checkbox } from 'V2/Components/Forms';
 import { StatsTooltip } from './Tooltip';
+import { IXFilters } from '../types';
 
 type Aggregations = {
   total: number;
   labeled: number;
   nonLabeled: number;
+  useForTraining: number;
   nonProcessed: number;
   obsolete: number;
   error: number;
@@ -20,17 +22,6 @@ type Aggregations = {
   mismatch: number;
   noContext: number;
   accuracy: number;
-};
-
-type IXFilters = {
-  labeled: boolean;
-  nonLabeled: boolean;
-  match: boolean;
-  mismatch: boolean;
-  obsolete: boolean;
-  error: boolean;
-  noContext: boolean;
-  nonProcessed: boolean;
 };
 
 interface FiltersSidepanelProps {
@@ -42,6 +33,7 @@ interface FiltersSidepanelProps {
 const defaultFilter: IXFilters = {
   labeled: false,
   nonLabeled: false,
+  useForTraining: false,
   match: false,
   mismatch: false,
   obsolete: false,
@@ -131,6 +123,17 @@ const FiltersSidepanel = ({
               />
               <div className="flex-1 border-t border-dashed border-t-gray-200" />
               <div className="flex-none font-mono font-bold">{aggregation.nonLabeled}</div>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Checkbox
+                label={<Translate className="font-normal">Use for training</Translate>}
+                {...register('useForTraining')}
+                onChange={e => {
+                  checkOption(e, 'useForTraining');
+                }}
+              />
+              <div className="flex-1 border-t border-dashed border-t-gray-200" />
+              <div className="flex-none font-mono font-bold">{aggregation.useForTraining}</div>
             </div>
           </Card>
 

@@ -10,12 +10,9 @@ A source template must,A source template must
 A target template needs to have the following properties,A target template needs to have the following properties
 A valid email is required,E-posta gerekli
 Accept,Kabul Et
-Accept suggestion,Accept suggestion
-Accept suggestions,Accept suggestions
 Accepted suggestion on entity,Accepted suggestion on entity
 Account,Hesap
 Account locked,Account locked
-Account locked. Check your email to unlock.,Account locked. Check your email to unlock.
 Account unlocked successfully,Account unlocked successfully
 Account updated,Account updated
 Accuracy,Accuracy
@@ -55,6 +52,7 @@ Add thesaurus value,Add thesaurus value
 Add timelink,Add timelink
 Add to all languages,Tüm dillere ekle
 Add to table of contents,İçindekiler tablosuna ekle
+Add to training set,Add to training set
 Add user,Kullanıcı ekle
 add value,add value
 Add/delete users and assign roles,Kullanıcı ekleme/silme ve roller atama
@@ -77,8 +75,10 @@ All of the paragraphs will be deleted,All of the paragraphs will be deleted
 All of the previously created paragraphs will be deleted and recreated after the process.,All of the previously created paragraphs will be deleted and recreated after the process.
 Allow captcha bypass,Allow captcha bypass
 Already exists,Already exists
+Amount,Amount
 An error has occured while deleting a language:,An error has occured while deleting a language:
 An error has occured while installing languages:,An error has occured while installing languages:
+An error has occurred,An error has occurred
 An error has occurred during data export,An error has occurred during data export
 An error occurred,An error occurred
 Analytics,Analytics
@@ -97,6 +97,7 @@ Attachment renamed,Attachment renamed
 Attachment uploaded,Attachment uploaded
 Attachments,Ekler
 Authentication code,Kimlik doğrulama kodu
+Auto-accept suggestions,Auto-accept suggestions
 auto-created,otomatik oluşturulmuş
 Automatic Table of Contents,Otomatik İçindekiler
 Automatically generated,Otomatik olarak oluşturuldu
@@ -130,6 +131,7 @@ Character support description,This option enhances support for non-Latin languag
 Character support process warning,"This process could take several minutes and will likely change URLs to library filters. If you have menus or links using such URLs, they will probably stop working after the update. You will need to update them manually."
 Character support revert warning,"After selecting this option, you will not be able to revert back to using legacy property naming. If you are not facing issues with your template property names, we recommend leaving this unchecked."
 Check to make this instance public (non-logged in users can see public documents and entities),Check to make this instance public (non-logged in users can see public documents and entities)
+Choose which data to use for training,Choose which data to use for training
 Clear,Clear
 Clear all,Clear all
 Clear All,Clear All
@@ -225,7 +227,6 @@ DELETE,Sil
 Delete entities and documents,Delete entities and documents
 Delete file,Delete file
 Delete language,Dili sil
-Delete Property,Özelliği Sil
 Deleted attachment,Deleted attachment
 Deleted custom file,Deleted custom file
 Deleted entity,Deleted entity
@@ -267,7 +268,6 @@ Drag row,Drag row
 Drop your files here to upload or,Dosyalarınızı yüklemek için buraya bırakın veya
 Duplicate values not allowed.,Duplicate values not allowed.
 Duplicated email,Mükerrer e-posta
-Duplicated label,Mükerrer etiket
 Duplicated name,Mükerrer ad
 Duplicated username,Mükerrer kullanıcı adı
 Edit,Düzenle
@@ -302,8 +302,6 @@ Entity types,Varlık türü
 Entity updated,Entity updated
 Error,Hata
 Error adding thesauri.,Error adding thesauri.
-Error creating relationship type.,Error creating relationship type.
-Error creating thesaurus.,Error creating thesaurus.
 Error deleting template(s),Error deleting template(s)
 Error loading your image,Error loading your image
 Error saving template.,Error saving template.
@@ -343,14 +341,21 @@ Filters OR operator,YA DA
 Filters saved,Filters saved
 Find,Bul
 Find suggestions,Find suggestions
+Find suggestions after training,Find suggestions after training
+Find suggestions for,Find suggestions for
+Find suggestions for selected,Find suggestions for selected
 Finding suggestions,Finding suggestions
 Fine tune,İnce ayar
 Fit,Yerleştirmek
 Flag,İşaretle
 for,for
+For all entities,For all entities
+For entities with blank values,For entities with blank values
 Forgot Password?,Parolanızı mı unuttunuz?
 Forms and email configuration,Formlar ve e-posta yapılandırması
 From,From
+From all suggestions,From all suggestions
+From previous step,From previous step
 Full width,Full width
 General,Genel
 General Information,General Information
@@ -408,6 +413,7 @@ Invalid csv: all the values for a row must be either nested or non-nested,Invali
 Invalid csv: nested value need to be under a non-nested value,Invalid csv: nested value need to be under a non-nested value
 Invalid form,geçersiz form
 It could also very easily break the app. Only write code here if you know exactly what you are doing.,Ayrıca uygulamayı çok kolay bozabilir. Buraya sadece tam olarak ne yaptığınızı biliyorsanız kod yazın.
+it has been logged with request id #,it has been logged with request id #
 Item,Item
 Items:,Öğeler:
 Javascript,Javascript
@@ -472,6 +478,10 @@ Mapping conflict error,"A reindex of your collection is necessary. The reason ma
 Maps,Haritalar
 Mark as Reviewed,İncelendi olarak işaretle
 Markdown,Not et
+marked and labeled,marked and labeled
+marked for training,marked for training
+Marked for training + all labeled entries,Marked for training + all labeled entries
+Marked for training only,Marked for training only
 Match,Match
 Matching,Matching
 matching,matching
@@ -589,6 +599,7 @@ Other users will be affected by this action!,Other users will be affected by thi
 Others,Others
 out of,dışında
 Page,Sayfa
+Page not found,Page not found
 Pages,Sayfalar
 Paragrap number extraction property (numeric),Paragrap number extraction property (numeric)
 Paragraph,Paragraph
@@ -627,6 +638,9 @@ Priority sorting,Öncelik sıralaması
 Priority sorting description,"Properties marked as priority sorting will be used as default sorting criteria. If more than one property is marked as priority sorting the system will try to pick-up the best fit. When listing mixed template types, the system will pick-up the best combined priority sorting."
 Private entities description,Caution: the selected entities will be **private**. Only allowed users will be able to see them.
 Private instance,Özel oluşum
+Process,Process
+Process extractor,Process extractor
+Process selected,Process selected
 Processed,Processed
 Processing,İşleniyor
 Properties,Özellikler
@@ -685,6 +699,7 @@ RelationType saved,İlişki türü kaydedildi
 remaining files,remaining files
 Remote Server Unreachable,Remote Server Unreachable
 Remove,Kaldır
+Remove from training set,Remove from training set
 remove icon,simgeyi kaldır
 Removed language,Removed language
 Rename,Yeniden adlandır
@@ -782,6 +797,7 @@ shown of,gösterilen
 Sign in,Oturum aç
 Single relationships must have a hub,Single relationships must have a hub
 Size,Boyut
+Skip to main content,Skip to main content
 Something went wrong,Bir şey ters gitti
 Sort,Sırala
 Sort ascending,Sort ascending
@@ -839,7 +855,6 @@ Template(s),Template(s)
 Template(s) deleted successfully.,Template(s) deleted successfully.
 Templates,Şablonlar
 Templates:,Templates:
-Test run,Test run
 Text,Metin
 Text references limit warning,Text references are temporarily limited to a maximum of 300. We are currently working on a fix for this issue.
 The import process threw an error:,İçe aktarma işlemi bir hata verdi:
@@ -901,8 +916,12 @@ Total files,Total files
 total files,total files
 "Total files from main documents, supporting files and uploads","Total files from main documents, supporting files and uploads"
 total users,total users
+Train,Train
+Train model,Train model
+Train model description,Training machine learning models may take from minutes up to a couple of hours depending on the amount of labeled data and the difficulty of the task.
 Training,Training
 Training model...,Training model...
+Training sample,Training sample
 Translate,Çevir
 Translation,Translation
 Translations,Çeviriler
@@ -919,6 +938,7 @@ Two-step verification,İki faktörlü doğrulama
 Two-step verification token required,Two-step verification token required
 Type,Tür
 "Unable to save, failed response","Unable to save, failed response"
+Unauthorized,Yetkisiz
 Unexpected error,Unexpected error
 Uninstall,Uninstall
 Uninstall language,Uninstall language
@@ -954,6 +974,7 @@ Uploads,Yüklemeler
 URL,URL
 Use,Kullan
 Use as filter,Use as filter
+Use for training,Use for training
 User,Kullanıcı
 User Action,User Action
 User Role,User Role

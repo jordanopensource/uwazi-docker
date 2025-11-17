@@ -1,18 +1,20 @@
+import { setupTestUploadedPaths, cleanupTestUploadedPaths } from 'api/files';
 import { appContext } from 'api/utils/AppContext';
+import { elasticTesting } from 'api/utils/elastic_testing';
 import testingDB, { DBFixture } from 'api/utils/testing_db';
 import { testingTenants } from 'api/utils/testingTenants';
-import { elasticTesting } from 'api/utils/elastic_testing';
 import { UserInContextMockFactory } from 'api/utils/testingUserInContext';
-import { setupTestUploadedPaths } from 'api/files';
 import { UserSchema } from 'shared/types/userType';
 
 let appContextGetMock: jest.SpyInstance<unknown, [key: string], any>;
 let appContextSetMock: jest.SpyInstance<unknown, [key: string, value: unknown], any>;
 
 const testingEnvironment = {
+  elasticIndex: '',
+  uploadSubPath: '',
   userInContextMockFactory: new UserInContextMockFactory(),
 
-  async setUp(fixtures?: DBFixture, elasticIndex?: string) {
+  async setUp(fixtures?: DBFixture, elasticIndex?: string | boolean) {
     await this.setTenant();
     this.setPermissions();
     this.setFakeContext();
@@ -27,6 +29,11 @@ const testingEnvironment = {
       indexName: 'index',
     });
     await setupTestUploadedPaths(subPath);
+    this.uploadSubPath = subPath;
+  },
+
+  async cleanupUploadPaths() {
+    await cleanupTestUploadedPaths(this.uploadSubPath);
   },
 
   setFakeContext() {
@@ -62,9 +69,15 @@ const testingEnvironment = {
     }
   },
 
-  async setElastic(elasticIndex?: string) {
-    if (elasticIndex) {
-      testingTenants.changeCurrentTenant({ indexName: elasticIndex });
+  async setElastic(elasticIndex?: string | boolean) {
+    if (elasticIndex && !this.elasticIndex) {
+      this.elasticIndex =
+        elasticIndex === true
+          ? `elasticsearch_test_index${process.pid}_${Date.now()}`
+          : elasticIndex;
+    }
+    if (this.elasticIndex) {
+      testingTenants.changeCurrentTenant({ indexName: this.elasticIndex });
       await elasticTesting.reindex();
     }
   },
@@ -88,12 +101,23 @@ const testingEnvironment = {
   },
 
   async tearDown() {
+    if (this.elasticIndex) {
+      try {
+        await elasticTesting.deleteIndex(this.elasticIndex);
+        this.elasticIndex = '';
+      } catch (error) {
+        console.warn(`Failed to cleanup Elasticsearch index ${this.elasticIndex}:`, error.message);
+      }
+    }
     await testingDB.disconnect();
   },
 
   db: {
     async getAllFrom(collectionName: string) {
-      return testingDB.mongodb?.collection(collectionName).find().toArray();
+      if (!testingDB.mongodb) {
+        throw new Error('Testing mongodb not connected');
+      }
+      return testingDB.mongodb.collection(collectionName).find().toArray();
     },
 
     getCollection(collectionName: string) {

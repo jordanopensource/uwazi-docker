@@ -1,5 +1,5 @@
-import { NoSuchKey, S3Client } from '@aws-sdk/client-s3';
-import { NodeHttpHandler } from '@smithy/node-http-handler';
+import { NoSuchKey, NotFound, S3Client } from '@aws-sdk/client-s3';
+import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler';
 import { inspect } from 'util';
 // eslint-disable-next-line node/no-restricted-import
 import { createReadStream, createWriteStream } from 'fs';
@@ -14,7 +14,7 @@ import { FileType } from 'shared/types/fileType';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
-import { DefaultLogger } from 'api/log.v2/infrastructure/StandardLogger';
+import { LoggerFactory } from 'api/core/infrastructure/factories/LoggerFactory';
 import { FileNotFound } from './FileNotFound';
 import {
   activityLogPath,
@@ -27,22 +27,11 @@ import {
 import { S3Error, S3Storage } from './S3Storage';
 
 let s3Instance: S3Storage;
-const defaultParams: { connectionTimeout: number; httpAgent?: {} } = {
-  connectionTimeout: 15000,
-  httpAgent: {
-    maxSockets: 50,
-    keepAlive: true,
-    keepAliveMsecs: 1000,
-  },
-};
-let previousFeatureFlag = false;
 
 const buildS3Client = (params: {}) => {
   const client = new S3Client({
-    requestHandler: new NodeHttpHandler({
-      socketTimeout: 30000,
-      ...params,
-    }),
+    maxAttempts: 5,
+    requestHandler: new NodeHttpHandler(params),
     apiVersion: 'latest',
     region: 'placeholder-region',
     endpoint: config.s3.endpoint,
@@ -61,33 +50,29 @@ const buildS3Client = (params: {}) => {
       const duration = Date.now() - startTime;
 
       if (process.env.NODE_ENV !== 'test') {
-        if (!tenants.current().featureFlags?.deactivateS3Logging) {
-          DefaultLogger().info('S3 operation completed', {
-            operation: context.commandName,
-            duration,
-            key: input.Key,
-            fileSizeKB: Buffer.isBuffer(input.Body) ? input.Body.length / 1024 : NaN,
-            success: true,
-            timestamp: new Date().toISOString(),
-          });
-        }
+        LoggerFactory.default().info('S3 operation completed', {
+          operation: context.commandName,
+          duration,
+          key: input.Key,
+          fileSizeKB: Buffer.isBuffer(input.Body) ? input.Body.length / 1024 : NaN,
+          success: true,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       return result;
     } catch (error) {
       if (process.env.NODE_ENV !== 'test') {
-        if (!tenants.current().featureFlags?.deactivateS3Logging) {
-          DefaultLogger().info('S3 operation failed', {
-            operation: context.commandName,
-            duration: Date.now() - startTime,
-            key: input.Key,
-            fileSizeKB: Buffer.isBuffer(input.Body) ? input.Body.length / 1024 : NaN,
-            success: false,
-            error: error.message,
-            errorCode: error.$metadata?.httpStatusCode,
-            timestamp: new Date().toISOString(),
-          });
-        }
+        LoggerFactory.default().info('S3 operation failed', {
+          operation: context.commandName,
+          duration: Date.now() - startTime,
+          key: input.Key,
+          fileSizeKB: Buffer.isBuffer(input.Body) ? input.Body.length / 1024 : NaN,
+          success: false,
+          error: error.message,
+          errorCode: error.$metadata?.httpStatusCode,
+          timestamp: new Date().toISOString(),
+        });
       }
       throw error;
     }
@@ -95,21 +80,27 @@ const buildS3Client = (params: {}) => {
   return client;
 };
 const s3 = () => {
-  const currentFeatureFlag = tenants.current().featureFlags?.deactivateS3Pooling || false;
-  let params = defaultParams;
+  const params: NodeHttpHandlerOptions = {
+    socketTimeout: 30000,
+    connectionTimeout: 3000,
+    httpAgent: {
+      maxSockets: 500,
+      timeout: 60000,
+      maxFreeSockets: 100,
+      keepAlive: true,
+      keepAliveMsecs: 5000,
+    },
+    httpsAgent: {
+      maxSockets: 500,
+      timeout: 60000,
+      maxFreeSockets: 100,
+      keepAlive: true,
+      keepAliveMsecs: 5000,
+    },
+  };
 
-  if (currentFeatureFlag) {
-    params = {
-      connectionTimeout: 50000,
-    };
-  }
-
-  if (config.s3.endpoint && (!s3Instance || currentFeatureFlag !== previousFeatureFlag)) {
-    if (s3Instance) {
-      s3Instance.destroy();
-    }
+  if (config.s3.endpoint && !s3Instance) {
     s3Instance = new S3Storage(buildS3Client(params));
-    previousFeatureFlag = currentFeatureFlag;
   }
 
   return s3Instance;
@@ -195,14 +186,14 @@ export const storage = {
   async fileExists(filename: string, type: FileTypes): Promise<boolean> {
     try {
       if (tenants.current().featureFlags?.s3Storage) {
-        (await readFromS3(filename, type)).destroy();
+        await s3().head(s3KeyWithPath(filename, type));
       } else {
         await access(paths[type](filename));
       }
     } catch (err) {
       if (
         err?.code === 'ENOENT' ||
-        (err instanceof S3Error && err.originalError instanceof NoSuchKey)
+        (err instanceof S3Error && err.originalError instanceof NotFound)
       ) {
         return false;
       }

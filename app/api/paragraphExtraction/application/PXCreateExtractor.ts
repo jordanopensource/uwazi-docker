@@ -1,9 +1,9 @@
-import { TemplatesDataSource } from 'api/templates.v2/contracts/TemplatesDataSource';
-import { IdGenerator } from 'api/common.v2/contracts/IdGenerator';
+import { TemplatesDataSource } from 'api/core/application/contracts/TemplatesDataSource';
+import { IdGenerator } from 'api/core/application/contracts/IdGenerator';
 import relationshipTypeDS from 'api/relationtypes';
-import { TransactionManager } from 'api/common.v2/contracts/TransactionManager';
-import { UseCase } from 'api/common.v2/contracts/UseCase';
-import { JobsDispatcher } from 'api/queue.v2/application/contracts/JobsDispatcher';
+import { TransactionManager } from 'api/core/application/contracts/TransactionManager';
+import { UseCase } from 'api/core/libs/UseCase';
+import { JobsDispatcher } from 'api/core/libs/queue/application/contracts/JobsDispatcher';
 import { CreateParagraphExtractionEntityStatusesJob } from '../jobs/CreateParagraphExtractionEntityStatusesJob';
 
 import { PXExtractor } from '../domain/PXExtractor';
@@ -56,14 +56,14 @@ class PXCreateExtractor implements UseCase<Input, Output> {
       );
     }
 
-    if (!targetTemplate) {
+    if (targetTemplate.isError()) {
       throw new PXValidationError(
         PXErrorCode.TARGET_TEMPLATE_NOT_FOUND,
         `Target template with id ${input.targetTemplateId} was not found`
       );
     }
 
-    if (!sourceTemplate) {
+    if (sourceTemplate.isError()) {
       throw new PXValidationError(
         PXErrorCode.SOURCE_TEMPLATE_NOT_FOUND,
         `Source template with id ${input.sourceTemplateId} was not found`
@@ -71,8 +71,8 @@ class PXCreateExtractor implements UseCase<Input, Output> {
     }
 
     return {
-      targetTemplate,
-      sourceTemplate,
+      targetTemplate: targetTemplate.getData(),
+      sourceTemplate: sourceTemplate.getData(),
       sourceRelationshipTypeId: sourceRelationshipType._id.toString(),
       targetRelationshipTypeId: targetRelationshipType._id.toString(),
     };

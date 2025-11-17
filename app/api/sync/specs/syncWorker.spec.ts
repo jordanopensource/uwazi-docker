@@ -16,7 +16,7 @@ import { permissionsContext } from 'api/permissions/permissionsContext';
 import relationships from 'api/relationships';
 import relationtypes from 'api/relationtypes';
 import syncRoutes from 'api/sync/routes';
-import templates from 'api/templates';
+import templates from 'api/core/v1_layer/templates';
 import { tenants } from 'api/tenants';
 import thesauri from 'api/thesauri';
 import users from 'api/users/users';
@@ -31,11 +31,12 @@ import express, { NextFunction, Request, RequestHandler, Response } from 'expres
 import { DefaultTranslationsDataSource } from 'api/i18n.v2/database/data_source_defaults';
 import { CreateTranslationsService } from 'api/i18n.v2/services/CreateTranslationsService';
 import { ValidateTranslationsService } from 'api/i18n.v2/services/ValidateTranslationsService';
-import { DefaultSettingsDataSource } from 'api/settings.v2/database/data_source_defaults';
+import { SettingsDataSourceFactory } from 'api/core/infrastructure/factories/SettingsDataSourceFactory';
 import { FetchResponseError } from 'shared/JSONRequest';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
 import { Db, ObjectId } from 'mongodb';
-import { getConnection } from 'api/common.v2/database/getConnectionForCurrentTenant';
+import { getConnection } from 'api/core/infrastructure/mongodb/common/getConnectionForCurrentTenant';
+import * as utils from 'shared/tsUtils';
 import { syncWorker } from '../syncWorker';
 import {
   host1Fixtures,
@@ -109,6 +110,7 @@ describe('syncWorker', () => {
     const app = express();
     await db.connect({ defaultTenant: false });
     jest.spyOn(mailer, 'send').mockResolvedValue(undefined);
+    jest.spyOn(utils, 'randomSleep').mockResolvedValue(undefined);
 
     tenants.add({
       name: 'host1',
@@ -367,12 +369,12 @@ describe('syncWorker', () => {
     });
 
     await tenants.run(async () => {
-      const transactionManager = DefaultTransactionManager();
+      const transactionManager = TransactionManagerFactory.default();
       await new CreateTranslationsService(
         DefaultTranslationsDataSource(transactionManager),
         new ValidateTranslationsService(
           DefaultTranslationsDataSource(transactionManager),
-          DefaultSettingsDataSource(transactionManager)
+          SettingsDataSourceFactory.default(transactionManager)
         ),
         transactionManager
       ).create([
@@ -499,8 +501,9 @@ describe('syncWorker', () => {
   describe('when a template that is whitelisted has been deleted', () => {
     it('should not throw an error', async () => {
       await tenants.run(async () => {
+        await elasticTesting.reindex();
+        permissionsContext.setCommandContext();
         await entitiesModel.delete({ template: template1 });
-        //@ts-ignore
         await templates.delete({ _id: template1 });
       }, 'host1');
 

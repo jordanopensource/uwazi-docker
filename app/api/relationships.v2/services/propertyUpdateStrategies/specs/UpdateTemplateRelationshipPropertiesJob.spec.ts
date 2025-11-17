@@ -1,12 +1,12 @@
 import { DefaultEntitiesDataSource } from 'api/entities.v2/database/data_source_defaults';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import { getFixturesFactory } from 'api/utils/fixturesFactory';
 import { tenants } from 'api/tenants';
-import { QueueAdapter } from 'api/queue.v2/infrastructure/QueueAdapter';
+import { QueueAdapter } from 'api/core/libs/queue/infrastructure/QueueAdapter';
 import testingDB from 'api/utils/testing_db';
-import { DefaultTestingQueueAdapter } from 'api/queue.v2/configuration/factories';
-import { NamespacedDispatcher } from 'api/queue.v2/infrastructure/NamespacedDispatcher';
+import { DefaultTestingQueueAdapter } from 'api/core/libs/queue/configuration/factories';
+import { NamespacedDispatcher } from 'api/core/libs/queue/infrastructure/NamespacedDispatcher';
 import { UpdateRelationshipPropertiesJob } from '../UpdateRelationshipPropertiesJob';
 import { UpdateTemplateRelationshipPropertiesJob } from '../UpdateTemplateRelationshipPropertiesJob';
 
@@ -35,7 +35,7 @@ describe('when handled', () => {
   beforeEach(async () => {
     adapter = DefaultTestingQueueAdapter();
 
-    const entitiesDataSource = DefaultEntitiesDataSource(DefaultTransactionManager());
+    const entitiesDataSource = DefaultEntitiesDataSource(TransactionManagerFactory.default());
     const dispatcher = new NamespacedDispatcher(tenants.current().name, 'test queue', adapter);
 
     const job = new UpdateTemplateRelationshipPropertiesJob(entitiesDataSource, dispatcher);

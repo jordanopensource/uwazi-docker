@@ -1,8 +1,9 @@
-import { CommonProperty, CommonPropertyProps } from 'api/templates.v2/model/CommonProperty';
-import { PropertyTypes } from 'api/templates.v2/model/Property';
+import { CommonProperty, CommonPropertyProps } from 'api/core/domain/template/CommonProperty';
+import { Context } from 'api/core/domain/template/Property';
 import { TitlePropertyInvalidNameError, PropertyTypeInvalidTypeError } from './errors';
+import { PropertyType } from './PropertyType';
 
-type Props = { prioritySorting?: boolean; generatedId?: boolean; type?: PropertyTypes } & Omit<
+type Props = { prioritySorting?: boolean; generatedId?: boolean; type?: PropertyType } & Omit<
   CommonPropertyProps,
   'type'
 >;
@@ -12,8 +13,8 @@ class TitleProperty extends CommonProperty {
 
   generatedId: boolean;
 
-  constructor(props: Props) {
-    super({ ...props, type: props.type || 'text', name: props.name || 'title' });
+  constructor(props: Props, context?: Context) {
+    super({ ...props, type: props.type || 'text', name: props.name || 'title' }, context);
     this.prioritySorting = props.prioritySorting || false;
     this.generatedId = props.generatedId || false;
 

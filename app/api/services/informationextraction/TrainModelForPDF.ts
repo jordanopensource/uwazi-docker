@@ -1,5 +1,5 @@
 /* eslint-disable max-statements */
-import { UseCase } from 'api/common.v2/contracts/UseCase';
+import { UseCase } from 'api/core/libs/UseCase';
 import { emitToTenant } from 'api/socketio/setupSockets';
 import { storage } from 'api/files';
 import urljoin from 'url-join';
@@ -10,10 +10,10 @@ import { IXExtractorType } from 'shared/types/extractorType';
 import { Suggestions } from 'api/suggestions/suggestions';
 import {
   FileWithAggregation,
-  getFilesForTraining,
   NoFilesForTraining,
   propertyTypeIsWithoutExtractedMetadata,
 } from './ixMaterials';
+import { getPdfTrainingProcess } from './FetchMaterialsForTraining';
 import { IXWebSocketEvents } from './WebSocketEvents';
 import { CommonMaterialsData, MaterialsData } from './InformationExtraction';
 import { IXTaskService } from './TaskService';
@@ -43,7 +43,7 @@ export class TrainModelForPDF implements UseCase<Input, Output> {
 
   async execute({ extractor }: Input): Promise<Output> {
     try {
-      const { process } = await getFilesForTraining(extractor);
+      const { process } = await getPdfTrainingProcess(extractor);
       const processedEntityIds: string[] = [];
 
       await process(async file => {
@@ -118,6 +118,7 @@ export class TrainModelForPDF implements UseCase<Input, Output> {
       xml_segments_boxes: file.segmentation.segmentation?.paragraphs,
       page_width: file.segmentation.segmentation?.page_width,
       page_height: file.segmentation.segmentation?.page_height,
+      useForTraining: !!file.useForTraining,
     };
 
     data = this.extendMaterialsWithLabeledData(

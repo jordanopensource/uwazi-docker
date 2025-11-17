@@ -186,7 +186,7 @@ Cypress.Commands.add('blankState', () => {
   const env = { DATABASE_NAME: 'uwazi_e2e', INDEX_NAME: 'uwazi_e2e' };
   cy.exec('yarn blank-state --force', { env, failOnNonZeroExit: false }).then(result => {
     if (result.code === 1) {
-      cy.exec('yarn blank-state --force', { env });
+      cy.exec('yarn blank-state --force', { env, failOnNonZeroExit: false });
     }
   });
 });
@@ -197,6 +197,20 @@ Cypress.Commands.add('realDragAndDrop', (subject, target) => {
     .realMouseMove(0, 0, { position: 'center' })
     .wait(100);
   target.realMouseMove(0, 0, { position: 'center' }).realMouseUp().wait(100);
+});
+
+Cypress.Commands.add('realDrag', (subject, distanceX, distanceY) => {
+  subject.then($el => {
+    const rect = $el[0].getBoundingClientRect();
+    const startX = rect.x + rect.width / 2;
+    const startY = rect.y + rect.height / 2;
+
+    cy.wrap($el).realMouseDown({ button: 'left', position: 'center' });
+
+    cy.get('body').realMouseMove(startX + distanceX, startY + distanceY, { position: 'topLeft' });
+
+    cy.get('body').realMouseUp({ button: 'left' });
+  });
 });
 
 Cypress.Commands.add('waitForLegacyNotifications', () => {

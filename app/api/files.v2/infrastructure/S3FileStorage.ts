@@ -1,16 +1,24 @@
-import { Readable } from 'stream';
-import { _Object, GetObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
+import {
+  _Object,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { config } from 'api/config';
+import { FileContentsIO } from 'api/core/infrastructure/files/FileContentIO';
 import { Tenant } from 'api/tenants/tenantContext';
 import path from 'path';
+import { Readable } from 'stream';
 import { FileStorage, GetFileInput } from '../contracts/FileStorage';
 import { Attachment } from '../model/Attachment';
-import { UwaziFile } from '../model/UwaziFile';
-import { URLAttachment } from '../model/URLAttachment';
 import { CustomUpload } from '../model/CustomUpload';
+import { FileContents } from '../model/FileContents';
 import { StoredFile } from '../model/StoredFile';
+import { URLAttachment } from '../model/URLAttachment';
+import { UwaziFile } from '../model/UwaziFile';
 import { PathManager } from './PathManager';
-import { File } from '../model/File';
+import { BaseFile } from '../model/BaseFile';
 
 export class S3FileStorage implements FileStorage {
   private bucket = config.s3.bucket;
@@ -21,10 +29,37 @@ export class S3FileStorage implements FileStorage {
 
   private pathManager: PathManager;
 
-  constructor(s3Client: S3Client, tenant: Tenant) {
+  private fileIO: FileContentsIO;
+
+  constructor(s3Client: S3Client, fileIO: FileContentsIO, tenant: Tenant) {
     this.s3Client = s3Client;
     this.tenant = tenant;
+    this.fileIO = fileIO;
     this.pathManager = new PathManager({ tenant });
+  }
+
+  async storeContent(content: FileContents, subpath: string): Promise<void> {
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: this.pathManager.createPath({
+          filename: path.basename(subpath),
+          destination: path.dirname(subpath),
+          type: 'customPath',
+        }),
+        Body: (await this.fileIO.toBuffer(content)).getDataOrThrow(),
+      })
+    );
+  }
+
+  async storeFile(file: BaseFile) {
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: this.pathManager.createPath(file),
+        Body: (await this.fileIO.toBuffer(file.content)).getDataOrThrow(),
+      })
+    );
   }
 
   async getFile(input: GetFileInput) {
@@ -33,12 +68,16 @@ export class S3FileStorage implements FileStorage {
       Key: this.pathManager.createPath(input),
     });
 
-    const response = await this.s3Client.send(command);
-
-    return new File({ source: response.Body as Readable, filename: input.filename });
+    const client = this.s3Client;
+    return new FileContents(async function* streamCallback() {
+      const stream = (await client.send(command)).Body as Readable;
+      for await (const chunk of stream) {
+        yield chunk;
+      }
+    });
   }
 
-  async getFiles(inputs: GetFileInput[]): Promise<File[]> {
+  async getFiles(inputs: GetFileInput[]) {
     const promises = inputs.map(async input => this.getFile(input));
 
     return Promise.all(promises);

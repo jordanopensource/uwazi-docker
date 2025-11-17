@@ -1,7 +1,7 @@
 import { ClientEntitySchema, ClientPropertySchema } from 'app/istore';
 import { MetadataObjectSchema, PropertyValueSchema } from 'shared/types/commonTypes';
 import { EntitySuggestionType } from 'shared/types/suggestionType';
-import { secondsToISODate } from 'V2/shared/dateHelpers';
+import { parseLocalizedDate } from 'V2/shared/dateHelpers';
 import * as entitiesAPI from 'V2/api/entities';
 import * as filesAPI from 'V2/api/files';
 import { TemplateSchema } from 'shared/types/templateType';
@@ -28,11 +28,6 @@ const getFormValue = (
     const entityMetadata = entity.metadata[suggestion.propertyName];
     value = entityMetadata?.length ? entityMetadata[0].value : '';
 
-    if (type === 'date' && value) {
-      const dateString = secondsToISODate(value as number);
-      value = dateString;
-    }
-
     if (type === 'select' || type === 'multiselect' || type === 'relationship') {
       value = entityMetadata?.map((metadata: MetadataObjectSchema) => metadata.value) || [];
     }
@@ -58,37 +53,14 @@ const loadSidepanelData = async ({
   return { ...(file[0] && { file: file[0] }), entity: entity[0] };
 };
 
-const loadValuesAndSuggestions = async (
-  value: string[],
-  suggestions: string[],
-  language: string
-) => {
-  const entities = await Promise.all(
-    value.map(async sharedId => {
-      const [entity] = await entitiesAPI.getBySharedId({ sharedId, language });
-      return entity;
-    })
-  );
-
-  const suggestionsEntities = await Promise.all(
-    suggestions.map(async sharedId => {
-      const [entity] = await entitiesAPI.getBySharedId({ sharedId, language });
-      return entity;
-    })
-  );
-
-  return [...entities, ...suggestionsEntities].filter(entity => entity);
-};
-
 const handleEntitySave = async (
   entity?: ClientEntitySchema,
   property?: ClientPropertySchema,
   metadata?: PropertyValueSchema | PropertyValueSchema[] | undefined,
-  template?: TemplateSchema,
-  fieldHasChanged?: boolean
+  template?: TemplateSchema
 ) => {
   const propertyName = property?.name;
-  if (!fieldHasChanged || !entity || !propertyName) {
+  if (!entity || !propertyName) {
     return undefined;
   }
 
@@ -124,6 +96,12 @@ const coerceValue = async (
   language: string = 'en'
 ) => {
   if (propertyType === 'date' && !Number.isNaN(text?.valueOf())) {
+    const timestamp = parseLocalizedDate(text as string, language);
+    if (timestamp !== null) {
+      return { success: true, value: timestamp };
+    }
+
+    // Fallback to backend API
     return entitiesAPI.coerceValue(text!, 'date', language);
   }
 
@@ -145,7 +123,6 @@ export {
   coerceValue,
   getFormValue,
   loadSidepanelData,
-  loadValuesAndSuggestions,
   handleEntitySave,
   getPropertyNameFromExtractPair,
   getTemplateFromExtractPair,

@@ -1,11 +1,15 @@
 /* eslint-disable node/no-restricted-import */
-import { createReadStream } from 'fs';
+import { createWriteStream } from 'fs';
+import { mkdir } from 'fs/promises';
 
-import { PathManager } from './PathManager';
+import path from 'path';
+import { pipeline } from 'stream/promises';
 import { FileStorage, GetFileInput } from '../contracts/FileStorage';
+import { DiskFile } from '../model/DiskFile';
+import { FileContents } from '../model/FileContents';
 import { StoredFile } from '../model/StoredFile';
 import { UwaziFile } from '../model/UwaziFile';
-import { File } from '../model/File';
+import { PathManager } from './PathManager';
 
 export class FileSystemStorage implements FileStorage {
   private pathManager: PathManager;
@@ -14,15 +18,43 @@ export class FileSystemStorage implements FileStorage {
     this.pathManager = pathManager;
   }
 
-  async getFile(input: GetFileInput): Promise<File> {
-    const stream = createReadStream(this.pathManager.createPath(input));
+  async storeContent(content: FileContents, subpath: string): Promise<void> {
+    const filepath = this.pathManager.createPath({
+      filename: path.basename(subpath),
+      destination: path.dirname(subpath),
+      type: 'customPath',
+    });
 
-    return new File({ filename: input.filename, source: stream });
+    try {
+      await mkdir(path.dirname(filepath), { recursive: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
+    }
+    await pipeline(content.read(), createWriteStream(filepath));
   }
 
-  async getFiles(inputs: GetFileInput[]): Promise<File[]> {
-    const promises = inputs.map(async input => this.getFile(input));
+  async storeFile(file: UwaziFile) {
+    const filepath = this.pathManager.createPath(file);
 
+    try {
+      await mkdir(path.dirname(filepath), { recursive: true });
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
+    }
+
+    await pipeline(file.content.read(), createWriteStream(filepath));
+  }
+
+  async getFile(input: GetFileInput): Promise<FileContents> {
+    return new DiskFile(this.pathManager.createPath(input)).toContent();
+  }
+
+  async getFiles(inputs: GetFileInput[]): Promise<FileContents[]> {
+    const promises = inputs.map(async input => this.getFile(input));
     return Promise.all(promises);
   }
 

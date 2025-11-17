@@ -1,16 +1,17 @@
-import { MongoDataSource, MongoDSOptions } from 'api/common.v2/database/MongoDataSource';
-import { MongoResultSet } from 'api/common.v2/database/MongoResultSet';
-import { MongoTransactionManager } from 'api/common.v2/database/MongoTransactionManager';
+import {
+  MongoDataSource,
+  MongoDSOptions,
+} from 'api/core/infrastructure/mongodb/common/MongoDataSource';
+import { MongoResultSet } from 'api/core/infrastructure/mongodb/common/MongoResultSet';
+import { MongoTransactionManager } from 'api/core/infrastructure/mongodb/common/MongoTransactionManager';
 import { search } from 'api/search';
-import { TemplatesDataSource } from 'api/templates.v2/contracts/TemplatesDataSource';
-import { TemplateProperty } from 'api/templates.v2/model/Template';
-import { V1RelationshipProperty } from 'api/templates.v2/model/V1RelationshipProperty';
+import { V1RelationshipProperty } from 'api/core/domain/template/V1RelationshipProperty';
 import { Db, Filter, ObjectId } from 'mongodb';
-import { LanguageISO6391 } from 'shared/types/commonTypes';
+import { MongoEntityMapper } from 'api/core/infrastructure/mongodb/entity/MongoEntityMapper';
+import { Property } from 'api/core/domain/template/Property';
 import { MultiLanguageEntityDataSource } from '../contracts/MultiLanguageEntitiesDataSource';
-import { MultiLanguageEntity } from '../model/MultiLanguageEntity';
-import { EntityMappers } from './EntityMapper';
-import { EntityDBO, MultiLanguageEntityDBO } from './schemas/EntityTypes';
+import { Entity } from '../../core/domain/entity/Entity';
+import { EntityDBO, EntityTemplateAggregation } from './schemas/EntityTypes';
 
 export class MongoMultiLanguageEntityDataSource
   extends MongoDataSource<EntityDBO>
@@ -18,18 +19,10 @@ export class MongoMultiLanguageEntityDataSource
 {
   protected collectionName = 'entities';
 
-  private templateDS: TemplatesDataSource;
-
   private modifiedSharedIds = new Set<string>();
 
-  constructor(
-    db: Db,
-    transactionManager: MongoTransactionManager,
-    templatesDS: TemplatesDataSource,
-    options: MongoDSOptions = {}
-  ) {
+  constructor(db: Db, transactionManager: MongoTransactionManager, options: MongoDSOptions = {}) {
     super(db, transactionManager, options);
-    this.templateDS = templatesDS;
     transactionManager.onCommitted(async () => {
       await search.indexEntities({ sharedId: { $in: Array.from(this.modifiedSharedIds) } });
     });
@@ -63,18 +56,19 @@ export class MongoMultiLanguageEntityDataSource
     sharedIds.forEach(id => this.modifiedSharedIds.add(id));
   }
 
-  async bulkUpdate(entitiesToSave: MultiLanguageEntity[], properties: TemplateProperty[] = []) {
+  async bulkUpdate(entitiesToSave: Entity[], properties: Property[] = []) {
     await this.getCollection().bulkWrite(
       entitiesToSave
         .map(entity =>
-          entity.getLanguages().map(language => {
+          entity.translationsList.map(([language, translation]) => {
             const $set = properties.reduce<{ [k: string]: any }>((setOperation, property) => {
-              const value = entity.getValue(property, language);
+              const { value } = translation.getValue(property.name);
               if (value) {
                 return { ...setOperation, [`metadata.${property.name}`]: value };
               }
               return setOperation;
             }, {});
+
             return {
               updateOne: {
                 filter: { sharedId: entity.sharedId, language },
@@ -89,7 +83,7 @@ export class MongoMultiLanguageEntityDataSource
     entitiesToSave.map(e => e.sharedId).forEach(id => this.modifiedSharedIds.add(id));
   }
 
-  async countByTemplateId(templateId: string) {
+  async countByTemplateId(templateId: string): Promise<number> {
     const aggregation = [
       { $match: { template: new ObjectId(templateId) } },
       { $group: { _id: '$sharedId' } },
@@ -120,11 +114,11 @@ export class MongoMultiLanguageEntityDataSource
   }
 
   async getEntitiesByRelatedProperties(
-    entities: MultiLanguageEntity[],
+    entities: Entity[],
     properties: V1RelationshipProperty[]
-  ): Promise<MongoResultSet<MultiLanguageEntityDBO, MultiLanguageEntity>> {
+  ): Promise<MongoResultSet<EntityTemplateAggregation, Entity>> {
     const relatedEntitiesSharedIds = entities
-      .map(e => properties.map(prop => e.getValue(prop, e.getLanguages()[0])).flat())
+      .map(e => properties.map(prop => e.getValue(prop.name, e.languages[0]).value).flat())
       .flat()
       .map(metadataValue => metadataValue.value)
       .filter((v): v is string => typeof v === 'string');
@@ -133,36 +127,45 @@ export class MongoMultiLanguageEntityDataSource
   }
 
   private async getByQuery(query: Filter<EntityDBO>) {
-    const templates = await this.templateDS.getAll().indexed(t => t.id);
     const aggregation = [
       { $match: query },
       {
+        $lookup: {
+          from: 'templates',
+          localField: 'template',
+          foreignField: '_id',
+          as: 'templateData',
+        },
+      },
+      { $unwind: '$templateData' },
+      {
         $group: {
           _id: '$sharedId',
-          translations: { $push: { k: '$language', v: '$$ROOT' } },
-          template: { $first: '$template' },
+          template: { $first: '$templateData' },
+          entities: { $push: '$$ROOT' },
         },
       },
       {
         $project: {
           _id: 0,
-          sharedId: '$_id',
-          translations: { $arrayToObject: '$translations' },
           template: 1,
+          entities: 1,
         },
       },
     ];
-    const cursor = this.getCollection().aggregate<MultiLanguageEntityDBO>(aggregation);
-    return new MongoResultSet<MultiLanguageEntityDBO, MultiLanguageEntity>(cursor, e => {
-      const entity = new MultiLanguageEntity(e.sharedId, e.template);
-      entity.withTemplate(templates[e.template]);
-      Object.keys(e.translations).forEach(language => {
-        entity.addTranslation(
-          language as LanguageISO6391,
-          EntityMappers.toModel(e.translations[language])
-        );
-      });
-      return entity;
-    });
+
+    const cursor = this.getCollection().aggregate<EntityTemplateAggregation>(aggregation);
+
+    return new MongoResultSet<EntityTemplateAggregation, Entity>(cursor, ({ template, entities }) =>
+      MongoEntityMapper.toDomain(entities, template)
+    );
+  }
+
+  async create(entity: Entity): Promise<void> {
+    const dbos = MongoEntityMapper.toDBO(entity);
+
+    await this.getCollection().insertMany(dbos);
+
+    this.modifiedSharedIds.add(entity.sharedId);
   }
 }

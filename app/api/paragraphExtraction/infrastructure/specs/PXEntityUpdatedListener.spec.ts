@@ -1,4 +1,4 @@
-import { EventsBus } from 'api/eventsbus';
+import { EventsBus } from 'api/core/libs/eventsbus';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import { DBFixture } from 'api/utils/testing_db';
 import { EntityUpdatedEvent } from 'api/entities/events/EntityUpdatedEvent';
@@ -57,7 +57,7 @@ const entityStatus3: MongoPXEntityStatusDBO = {
   extractorId: extractor2._id,
 };
 
-const document1En = factory.document('document_1_En', {
+const document1En = factory.processedDocument('document_1_En', {
   entity: entity1[0].sharedId,
   language: 'en',
 });

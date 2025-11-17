@@ -1,10 +1,14 @@
-import { BaseFile } from './BaseFile';
+import { BaseFile, BaseFileProps } from './BaseFile';
 
+type Props = BaseFileProps & { entity: string };
 export class Attachment extends BaseFile {
-  readonly filename: string;
+  readonly entity: string;
 
-  constructor(id: string, entity: string, totalPages: number, filename: string) {
-    super(id, entity, totalPages);
-    this.filename = filename;
+  protected _type = 'attachment' as const;
+
+  constructor(props: Props) {
+    const { entity, ...baseProps } = props;
+    super(baseProps);
+    this.entity = entity;
   }
 }

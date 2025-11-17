@@ -7,9 +7,9 @@ Object {
       "analyzer": "tokenizer",
       "fields": Object {
         "sort": Object {
-          "analyzer": "string_sorter",
-          "fielddata": true,
-          "type": "text",
+          "ignore_above": 1024,
+          "normalizer": "string_sorter_normalized",
+          "type": "keyword",
         },
       },
       "term_vector": "with_positions_offsets",
@@ -41,9 +41,9 @@ Object {
       "analyzer": "tokenizer",
       "fields": Object {
         "sort": Object {
-          "analyzer": "string_sorter",
-          "fielddata": true,
-          "type": "text",
+          "ignore_above": 1024,
+          "normalizer": "string_sorter_normalized",
+          "type": "keyword",
         },
       },
       "term_vector": "with_positions_offsets",
@@ -55,34 +55,20 @@ Object {
           "analyzer": "tokenizer",
           "fields": Object {
             "sort": Object {
-              "analyzer": "string_sorter",
-              "fielddata": true,
-              "type": "text",
+              "ignore_above": 1024,
+              "normalizer": "string_sorter_normalized",
+              "type": "keyword",
             },
           },
           "term_vector": "with_positions_offsets",
           "type": "text",
         },
         "value": Object {
-          "fields": Object {
-            "sort": Object {
-              "analyzer": "string_sorter",
-              "fielddata": true,
-              "type": "text",
-            },
-          },
           "type": "keyword",
         },
       },
     },
     "value": Object {
-      "fields": Object {
-        "sort": Object {
-          "analyzer": "string_sorter",
-          "fielddata": true,
-          "type": "text",
-        },
-      },
       "type": "keyword",
     },
   },

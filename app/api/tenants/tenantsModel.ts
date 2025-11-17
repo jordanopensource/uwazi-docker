@@ -34,9 +34,9 @@ const mongoSchema = new mongoose.Schema({
     sync: Boolean,
     deactivateTestJob: Boolean,
     paragraphExtraction: Boolean,
-    deactivateUpdateLogs: Boolean,
-    deactivateS3Pooling: Boolean,
-    deactivateS3Logging: Boolean,
+    v2CreateEntity: Boolean,
+    fileCacheHeaders: Boolean,
+    v2UploadFile: Boolean,
   },
   globalMatomo: { id: String, url: String },
   ciMatomoActive: Boolean,
@@ -54,6 +54,10 @@ class TenantsModel extends EventEmitter {
 
   changeStream?: ChangeStream;
 
+  private debounceTimer?: NodeJS.Timeout;
+
+  private pendingChanges = false;
+
   constructor() {
     super();
     this.collectionName = 'tenants';
@@ -65,7 +69,14 @@ class TenantsModel extends EventEmitter {
 
     this.changeStream = this.model.watch();
     this.changeStream.on('change', () => {
-      this.change().catch(handleError);
+      this.pendingChanges = true;
+      if (this.debounceTimer) clearTimeout(this.debounceTimer);
+      this.debounceTimer = setTimeout(async () => {
+        if (this.pendingChanges) {
+          await this.change();
+          this.pendingChanges = false;
+        }
+      }, 1000);
     });
 
     this.changeStream.on('error', (error: MongoError) => {
@@ -104,6 +115,7 @@ class TenantsModel extends EventEmitter {
   }
 
   async closeChangeStream() {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
     await this.changeStream?.close();
   }
 
@@ -124,7 +136,9 @@ class TenantsModel extends EventEmitter {
 
 const tenantsModel = async () => {
   const model = new TenantsModel();
-  await model.initialize();
+  if (process.env.NODE_ENV !== 'test') {
+    await model.initialize();
+  }
   return model;
 };
 

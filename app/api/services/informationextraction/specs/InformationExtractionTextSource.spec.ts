@@ -18,11 +18,11 @@ import { getEntitiesForTraining } from '../ixMaterials';
 jest.mock('api/socketio/setupSockets');
 jest.mock('api/services/tasksmanager/TaskManager.ts');
 
-jest.mock('api/queue.v2/configuration/factories', () => ({
+jest.mock('api/core/libs/queue/configuration/factories', () => ({
   DefaultDispatcher: () => {
     const {
       SyncDispatcherForTests,
-    } = require('api/queue.v2/infrastructure/SyncDispatcherForTests');
+    } = require('api/core/libs/queue/infrastructure/SyncDispatcherForTests');
     const {
       InformationExtraction: InformationExtraction1,
     } = require('api/services/informationextraction/InformationExtraction');
@@ -503,10 +503,25 @@ describe('Information Extraction: Extracting from text source', () => {
 
     it('should stop the model when there are no materials left to send', async () => {
       await informationExtraction.getSuggestions(factory.id('sourceTextExtractor1'));
+
+      // Make second call have no eligible materials
+      const [m] = await IXModelsModel.get({ extractorId: factory.id('sourceTextExtractor1') });
+      const runTs = m?.processRun?.suggestionsRunTimestamp || Date.now();
+      await IXSuggestionsModel.updateMany(
+        { extractorId: factory.id('sourceTextExtractor1') },
+        {
+          $set: {
+            date: 1,
+            'state.obsolete': false,
+            'state.error': false,
+            'modelData.suggestionsRunTimestamp': runTs,
+          },
+        }
+      );
+
       await informationExtraction.getSuggestions(factory.id('sourceTextExtractor1'));
 
       const [model] = await IXModelsModel.get({ extractorId: factory.id('sourceTextExtractor1') });
-
       expect(model.findingSuggestions).toBe(false);
     });
   });
@@ -818,8 +833,8 @@ describe('Information Extraction: Extracting from text source', () => {
           segment_text: 'any_text_segment_english',
           entity_name: extractionKeyEn.key,
           values: [
-            { id: 'A', label: 'A label' },
-            { id: 'B', label: 'B label' },
+            { id: 'A', label: 'A label', segment_text: 'any_text_segment_english' },
+            { id: 'B', label: 'B label', segment_text: 'any_text_segment_english' },
           ],
         },
       ]);
@@ -840,7 +855,10 @@ describe('Information Extraction: Extracting from text source', () => {
         extractorId,
         entityId: extractionKeyEn.entitySharedId,
         language: 'en',
-        suggestedValue: ['A', 'B'],
+        suggestedValue: [
+          { id: 'A', label: 'A label', segment: 'any_text_segment_english' },
+          { id: 'B', label: 'B label', segment: 'any_text_segment_english' },
+        ],
         segment: 'any_text_segment_english',
         status: 'ready',
         error: '',
@@ -869,8 +887,8 @@ describe('Information Extraction: Extracting from text source', () => {
           segment_text: 'any_text_segment_english',
           entity_name: extractionKeyEn.key,
           values: [
-            { id: 'P1sharedId', label: 'P1' },
-            { id: 'P2sharedId', label: 'P2' },
+            { id: 'P1sharedId', label: 'P1', segment_text: 'any_text_segment_english' },
+            { id: 'P2sharedId', label: 'P2', segment_text: 'any_text_segment_english' },
           ],
         },
       ]);
@@ -891,7 +909,10 @@ describe('Information Extraction: Extracting from text source', () => {
         extractorId,
         entityId: extractionKeyEn.entitySharedId,
         language: 'en',
-        suggestedValue: ['P1sharedId', 'P2sharedId'],
+        suggestedValue: [
+          { id: 'P1sharedId', label: 'P1', segment: 'any_text_segment_english' },
+          { id: 'P2sharedId', label: 'P2', segment: 'any_text_segment_english' },
+        ],
         segment: 'any_text_segment_english',
         status: 'ready',
         error: '',

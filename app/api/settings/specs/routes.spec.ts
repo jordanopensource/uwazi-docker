@@ -2,7 +2,7 @@ import entities from 'api/entities';
 import { permissionsContext } from 'api/permissions/permissionsContext';
 import { search } from 'api/search';
 import settings from 'api/settings';
-import templates from 'api/templates';
+import templates from 'api/core/v1_layer/templates';
 import users from 'api/users/users';
 import { setUpApp } from 'api/utils/testingRoutes';
 import { NextFunction, Request, Response } from 'express';
@@ -11,6 +11,7 @@ import request from 'supertest';
 import translations from 'api/i18n';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
 import waitForExpect from 'wait-for-expect';
+import * as setupSockets from 'api/socketio/setupSockets';
 import settingsRoutes from '../routes';
 import { settingsModel } from '../settingsModel';
 import fixtures from './fixtures';
@@ -21,6 +22,8 @@ jest.mock(
     next();
   }
 );
+
+jest.spyOn(setupSockets, 'emitToTenant').mockImplementation();
 
 describe('Settings routes', () => {
   const getApp = (userRole?: string) =>

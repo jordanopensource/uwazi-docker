@@ -4,18 +4,18 @@ import { ApiResponse } from '@elastic/elasticsearch';
 
 import { search } from 'api/search';
 import { DefaultEntitiesDataSource } from 'api/entities.v2/database/data_source_defaults';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
 import { testingEnvironment } from 'api/utils/testingEnvironment';
-import { getConnection } from 'api/common.v2/database/getConnectionForCurrentTenant';
+import { getConnection } from 'api/core/infrastructure/mongodb/common/getConnectionForCurrentTenant';
 import { DefaultFilesDataSource } from 'api/files.v2/database/data_source_defaults';
 import { mongoPXExtractorsCollection } from 'api/paragraphExtraction/infrastructure/MongoPXExtractorsDataSource';
-import { DefaultSettingsDataSource } from 'api/settings.v2/database/data_source_defaults';
+import { SettingsDataSourceFactory } from 'api/core/infrastructure/factories/SettingsDataSourceFactory';
 import { PXErrorCode } from 'api/paragraphExtraction/domain/PXValidationError';
 import { DBFixture } from 'api/utils/testing_db';
 import { tenants } from 'api/tenants';
 import { mongoPXEntitiesStatusCollection } from 'api/paragraphExtraction/infrastructure/MongoPXEntitiesStatusDataSource';
-import { MongoIdHandler } from 'api/common.v2/database/MongoIdGenerator';
-import { createMockLogger } from 'api/log.v2/infrastructure/MockLogger';
+import { MongoIdHandler } from 'api/core/infrastructure/mongodb/common/MongoIdGenerator';
+import { createMockLogger } from 'api/core/libs/logger/infrastructure/MockLogger';
 import { EntityStatus } from 'api/paragraphExtraction/domain/PXEntityStatusModel';
 import { PXEntitiesStatusDataSourceFactory } from 'api/paragraphExtraction/infrastructure/PXEntityStatusDataSourceFactory';
 import { PXExtractorsDataSourceFactory } from 'api/paragraphExtraction/infrastructure/PXExtractorsDataSourceFactory';
@@ -81,6 +81,8 @@ const setUpUseCase = () => {
   };
 
   const fileStorage = {
+    storeContent: jest.fn(),
+    storeFile: jest.fn(),
     getFiles: jest.fn().mockResolvedValue(files),
     getFile: jest.fn(),
     getPath: jest.fn(),
@@ -88,9 +90,9 @@ const setUpUseCase = () => {
   };
 
   const connection = getConnection();
-  const mongoTransactionManager = DefaultTransactionManager();
+  const mongoTransactionManager = TransactionManagerFactory.default();
   const entityDS = DefaultEntitiesDataSource(mongoTransactionManager);
-  const settingsDS = DefaultSettingsDataSource(mongoTransactionManager);
+  const settingsDS = SettingsDataSourceFactory.default(mongoTransactionManager);
   const filesDS = DefaultFilesDataSource(mongoTransactionManager);
 
   const extractorsDS = PXExtractorsDataSourceFactory.createDefault({
@@ -428,23 +430,6 @@ describe('PXExtractParagraphsFromEntity', () => {
 
     await expect(promise).rejects.toMatchObject({
       code: PXErrorCode.DOCUMENTS_NOT_FOUND,
-    });
-  });
-
-  it('should throw if there is no Segmentation Files to send', async () => {
-    const { extractParagraphs, fileStorage } = setUpUseCase();
-
-    fileStorage.getFiles = jest.fn().mockResolvedValue(() => []);
-
-    const promise = extractParagraphs.execute({
-      entitySharedId: entity1.sharedId!.toString()!,
-      extractorId: extractor._id.toString(),
-      userId: new ObjectId().toString(),
-      entityStatusId: entityStatus1._id.toString(),
-    });
-
-    await expect(promise).rejects.toMatchObject({
-      code: PXErrorCode.SEGMENTATION_FILES_NOT_FOUND,
     });
   });
 });

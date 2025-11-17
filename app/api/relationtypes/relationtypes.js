@@ -1,9 +1,9 @@
 import translations from 'api/i18n/translations';
 import relationships from 'api/relationships/relationships';
-import templates from 'api/templates';
+import templates from 'api/core/v1_layer/templates';
 import { createError } from 'api/utils';
 import { ContextType } from 'shared/translationSchema';
-import { generateNames, getUpdatedNames, getDeletedProperties } from '../templates/utils';
+import { generateNames, getUpdatedNames, getDeletedProperties } from '../utils/templateUtils';
 import model from './model';
 import * as v2 from './v2_support';
 
@@ -64,7 +64,11 @@ const updateTranslation = (currentTemplate, template) => {
   context[template.name] = template.name;
 
   return translations.updateContext(
-    { id: currentTemplate._id.toString(), label: template.name, type: 'Connection' },
+    {
+      id: currentTemplate._id.toString(),
+      label: template.name,
+      type: ContextType.relationshipType,
+    },
     updatedLabels,
     deletedPropertiesByLabel,
     context

@@ -1,16 +1,17 @@
-import { ObjectId } from 'mongodb';
-import { EventsBus } from 'api/eventsbus';
-import { FilesDeletedEvent } from 'api/files/events/FilesDeletedEvent';
-import { getConnection } from 'api/common.v2/database/getConnectionForCurrentTenant';
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
-import { DefaultSettingsDataSource } from 'api/settings.v2/database/data_source_defaults';
-import { Document } from 'api/files.v2/model/Document';
-import { FileMappers } from 'api/files.v2/database/FilesMappers';
-import { SettingsDataSource } from 'api/settings.v2/contracts/SettingsDataSource';
-import { LanguageISO6391 } from 'shared/types/commonTypes';
+import { featureFlaggedHandler } from 'api/common.v2/utils/featureFlaggedHandler';
+import { SettingsDataSource } from 'api/core/application/contracts/SettingsDataSource';
+import { SettingsDataSourceFactory } from 'api/core/infrastructure/factories/SettingsDataSourceFactory';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
+import { getConnection } from 'api/core/infrastructure/mongodb/common/getConnectionForCurrentTenant';
+import { EventsBus } from 'api/core/libs/eventsbus';
 import { FilesDataSource } from 'api/files.v2/contracts/FilesDataSource';
 import { DefaultFilesDataSource } from 'api/files.v2/database/data_source_defaults';
-import { featureFlaggedHandler } from 'api/common.v2/utils/featureFlaggedHandler';
+import { FileMappers } from 'api/files.v2/database/FilesMappers';
+import { DiskFile } from 'api/files.v2/model/DiskFile';
+import { ProcessedDocument } from 'api/files.v2/model/ProcessedDocument';
+import { FilesDeletedEvent } from 'api/files/events/FilesDeletedEvent';
+import { ObjectId } from 'mongodb';
+import { LanguageISO6391 } from 'shared/types/commonTypes';
 import { PXEntitiesStatusDataSource } from '../domain/PXEntitiesStatusDataSource';
 import { PXEntitiesStatusDataSourceFactory } from './PXEntityStatusDataSourceFactory';
 
@@ -31,14 +32,14 @@ export class PXFilesDeletedListener {
 
   private setupDependencies() {
     const connection = getConnection();
-    const mongoTransactionManager = DefaultTransactionManager();
+    const mongoTransactionManager = TransactionManagerFactory.default();
     const entitiesStatusDS = PXEntitiesStatusDataSourceFactory.createDefault({
       connection,
       mongoTransactionManager,
     });
 
     const filesDS = DefaultFilesDataSource(mongoTransactionManager);
-    const settingsDS = DefaultSettingsDataSource(mongoTransactionManager);
+    const settingsDS = SettingsDataSourceFactory.default(mongoTransactionManager);
 
     this.dependencies = { entitiesStatusDS, filesDS, settingsDS };
   }
@@ -48,13 +49,13 @@ export class PXFilesDeletedListener {
     installedLanguages: LanguageISO6391[]
   ) {
     const documentsInInstalledLanguages = await this.dependencies.filesDS
-      .getDocumentsForEntity(sharedId)
+      .getProcessedDocsForEntity(sharedId)
       .all();
 
     return documentsInInstalledLanguages.filter(d => installedLanguages.includes(d.language));
   }
 
-  private async getInitialData(deletedDocuments: Document[]) {
+  private async getInitialData(deletedDocuments: ProcessedDocument[]) {
     const entityStatus = await this.dependencies.entitiesStatusDS.getExisting({
       entitySharedId: deletedDocuments[0].entity,
     });
@@ -76,7 +77,7 @@ export class PXFilesDeletedListener {
   }
 
   // eslint-disable-next-line max-statements
-  private async onDocumentsDeleted(deletedDocuments: Document[]) {
+  private async onDocumentsDeleted(deletedDocuments: ProcessedDocument[]) {
     const { entityStatus, documentsInInstalledLanguages, installedLanguages } =
       await this.getInitialData(deletedDocuments);
 
@@ -129,8 +130,10 @@ export class PXFilesDeletedListener {
     this.setupDependencies();
 
     const deletedDocuments = files
-      .filter(f => f.type === 'document')
-      .map(d => FileMappers.toDocumentModel(d as any));
+      .filter(f => f.type === 'document' && f.status === 'ready')
+      .map(d =>
+        FileMappers.toModel<ProcessedDocument>(d as any, new DiskFile('mock/file').toContent())
+      );
 
     if (!deletedDocuments.length) {
       return;

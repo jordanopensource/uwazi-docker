@@ -1,13 +1,13 @@
 /* eslint-disable max-lines */
 /* eslint-disable no-param-reassign,max-statements */
 
-import { applicationEventsBus } from 'api/eventsbus';
+import { applicationEventsBus } from 'api/core/libs/eventsbus';
 import * as filesystem from 'api/files';
 import { PDF, files } from 'api/files';
 import { permissionsContext } from 'api/permissions/permissionsContext';
 import relationships from 'api/relationships/relationships';
 import { search } from 'api/search';
-import templates from 'api/templates/templates';
+import templates from 'api/core/v1_layer/templates/templates';
 import date from 'api/utils/date';
 import { unique } from 'api/utils/filters';
 import { propertyTypes } from 'shared/propertyTypes';
@@ -15,6 +15,10 @@ import { AccessLevels } from 'shared/types/permissionSchema';
 import ID from 'shared/uniqueID';
 
 import { ATSolveVersionConflict } from 'api/externalIntegrations.v2/automaticTranslation/utils/ATSolveVersionConflict';
+import { tenants } from 'api/tenants';
+import { MongoEntityMapper } from 'api/core/infrastructure/mongodb/entity/MongoEntityMapper';
+import { InputFile } from 'api/files.v2/model/InputFile';
+import { CreateEntityUseCaseFactory } from 'api/core/infrastructure/factories/CreateEntityUseCaseFactory';
 import settings from '../settings';
 import { denormalizeMetadata, denormalizeRelated } from './denormalize';
 import model from './entitiesModel';
@@ -376,8 +380,31 @@ export default {
   updateEntity,
   createEntity,
   getEntityTemplate,
-  async save(_doc, { user, language }, options = {}) {
+  async save(_doc, { user, language, attachments = [] }, options = {}) {
+    const { v2CreateEntity } = tenants.current().featureFlags;
+
     const { updateRelationships = true, index = true, includeDocuments = true } = options;
+    if (v2CreateEntity) {
+      const useCase = CreateEntityUseCaseFactory.default();
+
+      const output = await useCase.execute({
+        ..._doc,
+        templateId: _doc.template,
+        propertyAssignments: [
+          ...Object.entries(_doc.metadata || {}).map(([name, value]) => ({
+            name,
+            value,
+          })),
+          {
+            name: 'title',
+            value: [{ value: _doc.title }],
+          },
+        ],
+        attachments: attachments?.map(a => new InputFile(a)),
+      });
+
+      return MongoEntityMapper.toDBO(output).find(e => e.language === language);
+    }
 
     await validateEntity(_doc);
     await saveSelections(_doc);

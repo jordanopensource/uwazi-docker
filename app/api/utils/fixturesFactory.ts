@@ -57,18 +57,33 @@ const commonProperties = (
       name: 'title',
       isCommonProperty: true,
       type: 'text',
+      noLabel: false,
+      prioritySorting: false,
+      required: false,
+      showInCard: false,
+      generatedId: false,
     },
     {
+      _id: idMapper(`${key}creationDate`).toString(),
       label: 'Date added',
       name: 'creationDate',
       isCommonProperty: true,
       type: 'date',
+      noLabel: false,
+      prioritySorting: false,
+      required: false,
+      showInCard: false,
     },
     {
+      _id: idMapper(`${key}editDate`).toString(),
       label: 'Date modified',
       name: 'editDate',
       isCommonProperty: true,
       type: 'date',
+      noLabel: false,
+      prioritySorting: false,
+      required: false,
+      showInCard: false,
     },
   ];
 };
@@ -104,9 +119,6 @@ function getFixturesFactory() {
         _id: idMapper(name),
         name,
         properties,
-        processing: {
-          active: false,
-        },
         commonProperties: commonProperties(`commonProperties${name}`, idMapper),
         ...template,
       }) as TemplateSchema & { _id: ObjectId },
@@ -186,6 +198,10 @@ function getFixturesFactory() {
 
     document(id: string, extra: Partial<FileType> = {}): WithId<FileType> {
       return this.file(id, { ...extra, type: 'document' });
+    },
+
+    processedDocument(id: string, extra: Partial<FileType> = {}): WithId<FileType> {
+      return this.file(id, { ...extra, type: 'document', status: 'ready' });
     },
 
     custom_upload(id: string, extra: Partial<FileType> = {}): WithId<FileType> {

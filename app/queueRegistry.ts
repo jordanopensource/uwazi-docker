@@ -1,8 +1,24 @@
 /* eslint-disable max-classes-per-file */
-import { DefaultTransactionManager } from 'api/common.v2/database/data_source_defaults';
-import { getConnection } from 'api/common.v2/database/getConnectionForCurrentTenant';
 import { ValidationError } from 'api/common.v2/validation/ValidationError';
+import { PDFPostProcess } from 'api/core/application/PDFPostProcess';
+import { TemplateUpdateDenormalizeEntitiesBatch } from 'api/core/application/TemplateUpdateDenormalizeEntitiesBatch';
+import { IdGeneratorFactory } from 'api/core/infrastructure/factories/IdGeneratorFactory';
+import { SettingsDataSourceFactory } from 'api/core/infrastructure/factories/SettingsDataSourceFactory';
+import { TemplatesDataSourceFactory } from 'api/core/infrastructure/factories/TemplatesDataSourceFactory';
+import { TransactionManagerFactory } from 'api/core/infrastructure/factories/TransactionManagerFactory';
+import { PDFPostProcessJob } from 'api/core/infrastructure/jobs/PDFPostProcessJob';
+import { TemplatePostProcessEntitiesJob } from 'api/core/infrastructure/jobs/TemplatePostProcessEntitiesJob';
+import { getConnection } from 'api/core/infrastructure/mongodb/common/getConnectionForCurrentTenant';
+import { PDFService } from 'api/core/infrastructure/services/PDFService';
+import { V1WebSocketsWrapper } from 'api/core/infrastructure/services/V1WebSocketsWrapper';
+import {
+  Dispatchable,
+  HeartbeatCallback,
+} from 'api/core/libs/queue/application/contracts/Dispatchable';
+import { DispatchableClass } from 'api/core/libs/queue/application/contracts/JobsDispatcher';
 import { MongoMultiLanguageEntityDataSource } from 'api/entities.v2/database/MongoMultiLanguageEntityDataSource';
+import { DefaultFilesDataSource } from 'api/files.v2/database/data_source_defaults';
+import { FileStorageStrategyFactory } from 'api/files.v2/infrastructure/FileStorageStrategyFactory';
 import { MongoPXEntitiesStatusDataSource } from 'api/paragraphExtraction/infrastructure/MongoPXEntitiesStatusDataSource';
 import { PXCreateEntityStatusesFactory } from 'api/paragraphExtraction/infrastructure/PXCreateEntityStatusesFactory';
 import { PXCreateParagraphsFactory } from 'api/paragraphExtraction/infrastructure/PXCreateParagraphsFactory';
@@ -10,8 +26,6 @@ import { PXCreateParagraphsJob } from 'api/paragraphExtraction/infrastructure/PX
 import { PXExtractionServiceFactory } from 'api/paragraphExtraction/infrastructure/PXExtractionServiceFactory';
 import { PXExtractorsQueryServiceFactory } from 'api/paragraphExtraction/infrastructure/PXExtractorsQueryServiceFactory';
 import { PXExtractParagraphsFromEntityJob } from 'api/paragraphExtraction/infrastructure/PXExtractParagraphsFromEntityJob';
-import { Dispatchable, HeartbeatCallback } from 'api/queue.v2/application/contracts/Dispatchable';
-import { DispatchableClass } from 'api/queue.v2/application/contracts/JobsDispatcher';
 import { MongoRelationshipsV1DataSource } from 'api/relationships/MongoRelationshipsV1DataSource';
 import { InformationExtraction } from 'api/services/informationextraction/InformationExtraction';
 import { IXTaskService } from 'api/services/informationextraction/TaskService';
@@ -19,15 +33,12 @@ import { TrainModelForPDF } from 'api/services/informationextraction/TrainModelF
 import { TrainModelForText } from 'api/services/informationextraction/TrainModelForText';
 import { IXTrainModelJob } from 'api/services/informationextraction/TrainModelJob';
 import settings from 'api/settings';
-import { DefaultSettingsDataSource } from 'api/settings.v2/database/data_source_defaults';
+import { AcceptSuggestionsFactory } from 'api/suggestions/infrastructure/AcceptSuggestionsFactory';
+import { AcceptSuggestionsJob } from 'api/suggestions/jobs/AcceptSuggestionsJob';
 import { CreateBlankStateSuggestionsJob } from 'api/suggestions/jobs/CreateBlankStateSuggestionsJob';
-import { DefaultTemplatesDataSource } from 'api/templates.v2/database/data_source_defaults';
-import {
-  TemplateUpdateDenormalizeEntitiesBatch,
-  DenormalizeV1RelationshipsJob,
-} from 'api/templates/templateUpdateDenormalizeUseCase';
+import { DefaultDispatcher } from './api/core/libs/queue/configuration/factories';
 import { CreateParagraphExtractionEntityStatusesJob } from './api/paragraphExtraction/jobs/CreateParagraphExtractionEntityStatusesJob';
-import { DefaultDispatcher } from './api/queue.v2/configuration/factories';
+import { FileContentsIO } from 'api/core/infrastructure/files/FileContentIO';
 
 function randomIntFromInterval(min: number, max: number) {
   // min and max included
@@ -71,13 +82,13 @@ export function registerJobs(
   register(PXExtractParagraphsFromEntityJob, async () => new PXExtractParagraphsFromEntityJob());
 
   register(PXCreateParagraphsJob, async () => {
-    const transactionManager = DefaultTransactionManager();
+    const transactionManager = TransactionManagerFactory.default();
     const connection = getConnection();
     const extractorsQueryService = PXExtractorsQueryServiceFactory.createDefault({
       connection,
       transactionManager,
     });
-    const settingsDS = DefaultSettingsDataSource(transactionManager);
+    const settingsDS = SettingsDataSourceFactory.default(transactionManager);
 
     return new PXCreateParagraphsJob({
       extractionService: PXExtractionServiceFactory.createDefault(),
@@ -125,19 +136,36 @@ export function registerJobs(
     });
   });
 
-  register(DenormalizeV1RelationshipsJob, async () => {
-    const transactionManager = DefaultTransactionManager();
+  register(PDFPostProcessJob, async (_tenantName: string) => {
+    const transactionManager = TransactionManagerFactory.default();
+    return new PDFPostProcessJob({
+      useCase: new PDFPostProcess({
+        transactionManager,
+        filesDS: DefaultFilesDataSource(transactionManager),
+        fileStorage: FileStorageStrategyFactory.createDefault(),
+        pdfService: new PDFService(),
+        idGenerator: IdGeneratorFactory.default(),
+        filesIO: new FileContentsIO(),
+      }),
+      wSockets: new V1WebSocketsWrapper(),
+    });
+  });
 
-    return new DenormalizeV1RelationshipsJob({
-      templatesDS: DefaultTemplatesDataSource(transactionManager),
+  register(AcceptSuggestionsJob, async (tenantName: string) => {
+    const { job } = await AcceptSuggestionsFactory.createDefault({ tenantName });
+    return job;
+  });
+
+  register(TemplatePostProcessEntitiesJob, async () => {
+    const transactionManager = TransactionManagerFactory.default();
+
+    return new TemplatePostProcessEntitiesJob({
+      templatesDS: TemplatesDataSourceFactory.default(transactionManager),
       useCase: new TemplateUpdateDenormalizeEntitiesBatch({
-        entitiesDS: new MongoMultiLanguageEntityDataSource(
-          getConnection(),
-          transactionManager,
-          DefaultTemplatesDataSource(transactionManager)
-        ),
+        entitiesDS: new MongoMultiLanguageEntityDataSource(getConnection(), transactionManager),
+        filesDS: DefaultFilesDataSource(transactionManager),
         relationshipsV1DS: new MongoRelationshipsV1DataSource(getConnection(), transactionManager),
-        templatesDS: DefaultTemplatesDataSource(transactionManager),
+        templatesDS: TemplatesDataSourceFactory.default(transactionManager),
         transactionManager,
       }),
     });

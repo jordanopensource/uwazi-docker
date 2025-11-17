@@ -30,7 +30,7 @@ services:
       - uwazi_network
 
   mongo:
-    image: 'mongo:8'
+    image: "mongo:8"
     container_name: uwazi-mongo
     command: mongod --replSet "uwazi_replica_set"
     volumes:

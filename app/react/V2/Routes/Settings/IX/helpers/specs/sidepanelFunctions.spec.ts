@@ -4,19 +4,21 @@
 
 import { ClientEntitySchema, ClientPropertySchema } from 'app/istore';
 import { TemplateSchema } from 'shared/types/templateType';
+import { EntitySuggestionType } from 'shared/types/suggestionType';
 import {
   getPropertyNameFromExtractPair,
   getTemplateFromExtractPair,
   handleEntitySave,
   getFormValue,
+  coerceValue,
 } from '../sidepanelFunctions';
-import { EntitySuggestionType } from 'shared/types/suggestionType';
 
 jest.mock('V2/api/entities', () => ({
   formatter: {
     update: jest.fn().mockImplementation((entity, data) => ({ ...entity, ...data })),
   },
   save: jest.fn().mockResolvedValue({ success: true }),
+  coerceValue: jest.fn(),
 }));
 
 const mockEntity: ClientEntitySchema = {
@@ -103,25 +105,8 @@ describe('sidepanelFunctions', () => {
       jest.clearAllMocks();
     });
 
-    it('should return undefined when field has not changed', async () => {
-      const result = await handleEntitySave(
-        mockEntity,
-        mockTextProperty,
-        'new value',
-        mockTemplate,
-        false
-      );
-      expect(result).toBeUndefined();
-    });
-
     it('should return undefined when entity is not provided', async () => {
-      const result = await handleEntitySave(
-        undefined,
-        mockTextProperty,
-        'new value',
-        mockTemplate,
-        true
-      );
+      const result = await handleEntitySave(undefined, mockTextProperty, 'new value', mockTemplate);
       expect(result).toBeUndefined();
     });
 
@@ -131,8 +116,7 @@ describe('sidepanelFunctions', () => {
         mockEntity,
         propertyWithoutName,
         'new value',
-        mockTemplate,
-        true
+        mockTemplate
       );
       expect(result).toBeUndefined();
     });
@@ -140,7 +124,7 @@ describe('sidepanelFunctions', () => {
     it('should handle title property updates', async () => {
       const { formatter, save } = jest.requireMock('V2/api/entities');
 
-      await handleEntitySave(mockEntity, mockTextProperty, 'New Title', mockTemplate, true);
+      await handleEntitySave(mockEntity, mockTextProperty, 'New Title', mockTemplate);
 
       expect(formatter.update).toHaveBeenCalledWith(mockEntity, { title: 'New Title' });
       expect(save).toHaveBeenCalled();
@@ -150,7 +134,7 @@ describe('sidepanelFunctions', () => {
       const regularProperty = { ...mockTextProperty, name: 'description' };
       const { formatter, save } = jest.requireMock('V2/api/entities');
 
-      await handleEntitySave(mockEntity, regularProperty, 'New Description', mockTemplate, true);
+      await handleEntitySave(mockEntity, regularProperty, 'New Description', mockTemplate);
 
       expect(formatter.update).toHaveBeenCalledWith(mockEntity, {
         properties: [{ description: 'New Description' }],
@@ -165,8 +149,7 @@ describe('sidepanelFunctions', () => {
         mockEntity,
         mockRelationshipProperty,
         ['entity1', 'entity2'],
-        mockTemplate,
-        true
+        mockTemplate
       );
 
       expect(save).toHaveBeenCalledWith({
@@ -222,14 +205,14 @@ describe('sidepanelFunctions', () => {
         expected: 'Test Description',
       },
       {
-        description: 'should convert date value to ISO format',
+        description: 'should return timestamp for date value',
         suggestion: { propertyName: 'date' } as EntitySuggestionType,
         entity: {
           ...mockEntity,
           metadata: { date: [{ value: 1696624527 }] },
         },
         type: 'date',
-        expected: '2023-10-06',
+        expected: 1696624527,
       },
       {
         description: 'should return array for select type',
@@ -270,6 +253,56 @@ describe('sidepanelFunctions', () => {
       },
     ])('$description', ({ suggestion, entity, type, expected }) => {
       expect(getFormValue(suggestion, entity, type)).toEqual(expected);
+    });
+  });
+
+  describe('coerceValue', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    describe('date parsing', () => {
+      it('should successfully parse a valid date string', async () => {
+        const result = await coerceValue('date', '18 July 2025', 'en');
+        expect(result).toEqual({
+          success: true,
+          value: 1752796800,
+        });
+      });
+
+      it('should return undefined for invalid date input', async () => {
+        const result = await coerceValue('date', undefined, 'en');
+        expect(result).toBeUndefined();
+      });
+
+      it('should return undefined for empty string', async () => {
+        const result = await coerceValue('date', '', 'en');
+        expect(result).toBeUndefined();
+      });
+
+      it('should return undefined for invalid date string', async () => {
+        const result = await coerceValue('date', 'invalid date', 'en');
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe('unsupported property types', () => {
+      it('should return undefined for unsupported property types', async () => {
+        const result = await coerceValue('text' as any, 'some text', 'en');
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe('invalid input', () => {
+      it('should return undefined for invalid date input', async () => {
+        const result = await coerceValue('date', undefined, 'en');
+        expect(result).toBeUndefined();
+      });
+
+      it('should return undefined for invalid numeric input', async () => {
+        const result = await coerceValue('numeric', undefined, 'en');
+        expect(result).toBeUndefined();
+      });
     });
   });
 });

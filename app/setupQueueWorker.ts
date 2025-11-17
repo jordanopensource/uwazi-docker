@@ -1,23 +1,28 @@
 /* eslint-disable max-statements */
 import * as Sentry from '@sentry/node';
 import { config } from 'api/config';
+import { LoggerFactory } from 'api/core/infrastructure/factories/LoggerFactory';
+import { applicationEventsBus } from 'api/core/libs/eventsbus';
+import { LogEntry } from 'api/core/libs/logger/infrastructure/LogEntry';
+import { LogWriter } from 'api/core/libs/logger/infrastructure/LogWriter';
+import { withFeature } from 'api/core/libs/logger/infrastructure/StandardLogger';
+import { StandardJSONWriter } from 'api/core/libs/logger/infrastructure/writers/StandardJSONWriter';
+import { Dispatchable } from 'api/core/libs/queue/application/contracts/Dispatchable';
+import { DispatchableClass } from 'api/core/libs/queue/application/contracts/JobsDispatcher';
+import { RoundRobinQueueAdapter } from 'api/core/libs/queue/configuration/factories';
+import {
+  QueueWorker,
+  QueueWorkerErrorHandler,
+} from 'api/core/libs/queue/infrastructure/QueueWorker';
 import { registerEventListeners } from 'api/eventListeners';
-import { applicationEventsBus } from 'api/eventsbus';
 import { Redis } from 'api/infrastructure/Redis';
-import { LogEntry } from 'api/log.v2/infrastructure/LogEntry';
-import { LogWriter } from 'api/log.v2/infrastructure/LogWriter';
-import { SystemLogger, withFeature } from 'api/log.v2/infrastructure/StandardLogger';
-import { StandardJSONWriter } from 'api/log.v2/infrastructure/writers/StandardJSONWriter';
 import { DB } from 'api/odm';
-import { Dispatchable } from 'api/queue.v2/application/contracts/Dispatchable';
-import { DispatchableClass } from 'api/queue.v2/application/contracts/JobsDispatcher';
-import { RoundRobinQueueAdapter } from 'api/queue.v2/configuration/factories';
-import { QueueWorker, QueueWorkerErrorHandler } from 'api/queue.v2/infrastructure/QueueWorker';
 import { setupWorkerSockets } from 'api/socketio/setupSockets';
 import { tenants } from 'api/tenants';
 import { prettifyError } from 'api/utils/handleError';
 import { initSentry } from './initSentry';
 import { registerJobs } from './queueRegistry';
+import { inspect } from 'util';
 
 type Props = {
   standAloneProcess?: boolean;
@@ -34,7 +39,7 @@ const replaceTenantWithJobNamespace =
     );
   };
 
-const logger = SystemLogger(
+const logger = LoggerFactory.systemLogger(
   replaceTenantWithJobNamespace(withFeature(StandardJSONWriter, 'Queue worker'))
 );
 
@@ -58,7 +63,7 @@ function register<T extends Dispatchable>(
 
 const captureError: QueueWorkerErrorHandler = (error, context) => {
   const prettyError: { logLevel: 'debug' | 'error'; message: string } = prettifyError(error);
-  logger[prettyError.logLevel](prettyError.message, { job: context?.job });
+  logger[prettyError.logLevel](inspect(error), { job: context?.job });
   if (prettyError.logLevel === 'error') {
     Sentry.withScope(scope => {
       if (context?.job) {
