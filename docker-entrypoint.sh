@@ -100,29 +100,29 @@ wait_for_redis() {
 # Check if the default collections exist in the database
 db_exists() {
   local collections=(
-    'connections'
-    'translationsV2'
-    'translations'
     'activitylogs'
-    'settings'
-    'users'
-    'templates'
-    'relationtypes'
-    'updatelogs'
-    'migrations'
-    'migrationHubRecords'
-    'files'
-    'relationshipMigrationFields'
-    'entities'
-    'sessions'
-    'relationships'
+    'connections'
     'dictionaries'
-    'pages'
-    'usergroups'
+    'entities'
+    'files'
+    'migrationHubRecords'
+    'migrations'
     'ocr_records'
+    'pages'
     'px_entities_status'
     'px_extractors'
+    'relationshipMigrationFields'
+    'relationships'
+    'relationtypes'
     'segmentations'
+    'sessions'
+    'settings'
+    'templates'
+    'translations'
+    'translationsV2'
+    'updatelogs'
+    'usergroups'
+    'users'
   )
 
   # Get the list of existing collections in the database
@@ -188,4 +188,8 @@ echo "Migrations and reindexing complete."
 
 # Start the Uwazi server in production mode
 echo "Starting Uwazi server..."
-DATABASE_NAME=${DATABASE_NAME} INDEX_NAME=$INDEX_NAME NODE_ENV=production FILES_ROOT_PATH=$FILES_ROOT_PATH yarn run-production
+DATABASE_NAME=${DATABASE_NAME} \
+INDEX_NAME=$INDEX_NAME \
+NODE_ENV=production \
+FILES_ROOT_PATH=$FILES_ROOT_PATH \
+node --no-experimental-fetch server.js
