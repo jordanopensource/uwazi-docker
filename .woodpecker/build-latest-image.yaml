@@ -7,9 +7,9 @@ when:
     evaluate: 'CI_COMMIT_TARGET_BRANCH != "main"'
 
 variables:
-  - &registry_url "https://registry.cloud.josa.ngo"
-  - &docker_repo "registry.cloud.josa.ngo/library/uwazi"
-  - &slack_channel "builds"
+  - &registry_url 'https://registry.cloud.josa.ngo'
+  - &docker_repo 'registry.cloud.josa.ngo/library/uwazi'
+  - &slack_channel 'builds'
   # Success message template
   - &success_message >
     ✅ *SUCCESS* - Latest Build #{{ build.number }}
@@ -42,22 +42,22 @@ steps:
       registry: *registry_url
       dockerfile: ./Dockerfile
       tags:
-        - ${CI_COMMIT_SHA:-latest}
+        - latest-${CI_COMMIT_SHA}
         - latest
       username:
         from_secret: REGISTRY_USERNAME
       password:
         from_secret: REGISTRY_SECRET
       build_args:
-        CI_REPO: "${CI_REPO}"
-        CI_REPO_NAME: "${CI_REPO_NAME}"
-        CI_REPO_URL: "${CI_REPO_URL}"
-        CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
-        CI_COMMIT_REF: "${CI_COMMIT_REF}"
-        CI_PIPELINE_URL: "${CI_PIPELINE_URL}"
-        CI_PIPELINE_CREATED: "${CI_PIPELINE_CREATED}"
-        CI_PREV_PIPELINE_URL: "${CI_PREV_PIPELINE_URL}"
-        CI_PIPELINE_NUMBER: "${CI_PIPELINE_NUMBER}"
+        CI_REPO: '${CI_REPO}'
+        CI_REPO_NAME: '${CI_REPO_NAME}'
+        CI_REPO_URL: '${CI_REPO_URL}'
+        CI_COMMIT_SHA: '${CI_COMMIT_SHA}'
+        CI_COMMIT_REF: '${CI_COMMIT_REF}'
+        CI_PIPELINE_URL: '${CI_PIPELINE_URL}'
+        CI_PIPELINE_CREATED: '${CI_PIPELINE_CREATED}'
+        CI_PREV_PIPELINE_URL: '${CI_PREV_PIPELINE_URL}'
+        CI_PIPELINE_NUMBER: '${CI_PIPELINE_NUMBER}'
 
   # Slack notification for latest build success
   - name: notify-slack-latest-success
